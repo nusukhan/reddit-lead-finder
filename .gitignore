@@ -1,0 +1,26 @@
+# ===== SECRETS - yeh KABHI GitHub pe na jaayein =====
+.env
+ 
+# ===== Data files (machine par banti hain, GitHub pe zaroorat nahi) =====
+posts.json
+matched_posts.json
+leads.json
+scored.json
+leads.html
+email-safe-rendered.html
+# NOTE: seen.json ko JAAN-BOOJH kar ignore NAHI kiya - GitHub ko use
+# yaad rakhna hota hai (dedup), isliye woh repo mein rehti hai.
+ 
+# ===== Python junk =====
+venv/
+__pycache__/
+*.pyc
+.Python
+*.egg-info/
+ 
+# ===== Editor/OS junk =====
+.vscode/
+.idea/
+.DS_Store
+Thumbs.db
+ 

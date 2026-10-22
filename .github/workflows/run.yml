@@ -1,0 +1,56 @@
+# .github/workflows/run.yml
+# Yeh GitHub ko batata hai: har ghanta run_all.py khud chalao (cloud par,
+# laptop band ho tab bhi). Keys "Secrets" se aati hain, code mein nahi.
+
+name: Reddit Lead Finder
+
+on:
+  schedule:
+    # Har ghanta chalao. (Yeh UTC time hai - exact minute GitHub thoda
+    # aage-peeche kar sakta hai, normal baat hai.)
+    - cron: "0 * * * *"
+  # "Run workflow" button bhi de do - jab chaho haath se chala sako.
+  workflow_dispatch:
+
+jobs:
+  find-leads:
+    runs-on: ubuntu-latest
+    timeout-minutes: 30      # 30 min se zyada chale to rok do (atak na jaye)
+    permissions:
+      contents: write        # seen.json ko wapas repo mein save karne ke liye
+
+    steps:
+      # 1) Tumhara code laao
+      - name: Code checkout
+        uses: actions/checkout@v4
+
+      # 2) Python lagao
+      - name: Python setup
+        uses: actions/setup-python@v5
+        with:
+          python-version: "3.12"
+
+      # 3) Libraries install karo (requirements.txt se)
+      - name: Install libraries
+        run: pip install -r requirements.txt
+
+      # 4) run_all.py chalao - keys Secrets se environment mein aati hain
+      - name: Run lead finder
+        env:
+          GOOGLE_API_KEY: ${{ secrets.GOOGLE_API_KEY }}
+          GMAIL_ADDRESS: ${{ secrets.GMAIL_ADDRESS }}
+          GMAIL_APP_PASSWORD: ${{ secrets.GMAIL_APP_PASSWORD }}
+          TO_EMAIL: ${{ secrets.TO_EMAIL }}
+        run: python run_all.py
+
+      # 5) seen.json ko repo mein wapas save karo (dedup yaad rahe agli baar)
+      #    GitHub har baar nayi machine deta hai, is liye seen.json ko
+      #    commit karna padta hai warna har ghante wahi purani leads aayengi.
+      - name: Save seen.json
+        if: always()          # email fail bhi ho to bhi jo mila woh yaad rakho
+        run: |
+          git config user.name "lead-finder-bot"
+          git config user.email "bot@users.noreply.github.com"
+          git add seen.json || true
+          git commit -m "update seen.json [skip ci]" || echo "kuch naya nahi, commit skip"
+          git push || echo "push skip"
