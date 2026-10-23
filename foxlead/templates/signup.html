@@ -18,8 +18,10 @@
 
     {% include "_flash.html" %}
 
+    {% if google %}{# Google ki keys (.env) na hon to button hi nahi - bekaar button se log uljhte the #}
     {% include "_google_button.html" %}
     <div class="divider">{{ _("or") }}</div>
+    {% endif %}
 
     <form method="post" novalidate>
       <input type="hidden" name="csrf_token" value="{{ csrf_token() }}">
