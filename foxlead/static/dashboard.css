@@ -316,7 +316,14 @@ tbody tr.done .lead-title { color: var(--soft); }
 .chat-form textarea { flex: 1; resize: none; max-height: 120px; background: var(--panel); border: 1px solid var(--line); border-radius: 10px;
                       padding: 9px 11px; color: var(--ink); font: inherit; font-size: 0.86rem; outline: none; }
 .chat-form textarea:focus { border-color: var(--accent-dim); }
-@media (max-width: 560px) { .chat { right: 8px; bottom: 8px; height: calc(100vh - 16px); } .chat-fab span { display: none; } }
+/* phone: chat poori screen par, sawal ek line mein side-scroll (aadhi screen na ghere) */
+@media (max-width: 560px) {
+  .chat { inset: 0; width: auto; max-width: none; height: 100vh; height: 100dvh; max-height: none; border: 0; border-radius: 0; }
+  .chat-fab span { display: none; }
+  .chat-suggest { flex-wrap: nowrap; overflow-x: auto; scrollbar-width: none; }
+  .chat-suggest button { flex: none; }
+  .chat-head span { display: block; white-space: nowrap; overflow: hidden; text-overflow: ellipsis; }
+}
 
 /* ---------- pipeline board (Kanban) ---------- */
 .board { display: grid; grid-template-columns: repeat(5, minmax(165px, 1fr)); gap: 10px; padding: 14px 22px 22px; overflow-x: auto; }

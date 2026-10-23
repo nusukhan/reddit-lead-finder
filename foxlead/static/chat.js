@@ -272,7 +272,7 @@
     if (male || voices[0]) u.voice = male || voices[0];
     synth.speak(u);
   }
-  function hello() {
+  function robotHello() {
     if (helloDone || helloLeads === null || !soundOn) return;
     helloDone = true; hint.hidden = true;
     play(SOUND.robot);
@@ -288,9 +288,9 @@
   function maybeHello() {
     if (!soundOn || helloDone) return;
     const allowed = navigator.userActivation ? navigator.userActivation.hasBeenActive : false;
-    if (allowed) hello(); else hint.hidden = false;
+    if (allowed) robotHello(); else hint.hidden = false;
   }
-  hint.addEventListener("click", hello);
+  hint.addEventListener("click", robotHello);
   $c("chat-greet-go").addEventListener("click", () => { hideGreet(); setLead(null); open(true); ask(t("Which of my new leads should I look at first?")); });
   $c("chat-greet-x").addEventListener("click", hideGreet);
 
@@ -340,7 +340,7 @@
   showToggles();
 
   // Browser pehli click/tap tak awaaz rok kar rakhta hai - pehli click par robot ka salaam
-  const unlock = () => { if (audio && audio.state === "suspended") audio.resume(); hello(); };
+  const unlock = () => { if (audio && audio.state === "suspended") audio.resume(); robotHello(); };
   document.addEventListener("pointerdown", unlock, { once: true, capture: true });
   document.addEventListener("keydown", unlock, { once: true, capture: true });
   // nayi leads hain aur chat abhi tak nahi khola: har 3 minute baad yaad dilao (zyada se zyada 3 baar)
