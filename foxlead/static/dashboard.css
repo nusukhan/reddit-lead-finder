@@ -239,6 +239,14 @@ tbody tr.done .lead-title { color: var(--soft); }
              display: flex; align-items: center; justify-content: center; }
 .fab-badge[hidden] { display: none; }
 .chat-fab:has(.fab-badge:not([hidden]))::before { display: none; }
+/* "Tap to hear Foxlead" - browser ne awaaz roki ho to chatbot button ke paas */
+.voice-hint { position: fixed; right: 20px; bottom: 82px; z-index: 7; display: inline-flex; align-items: center; gap: 7px;
+              border: 1px solid var(--accent-dim); background: var(--accent-soft); color: var(--accent-2); border-radius: 18px;
+              padding: 7px 12px; font-size: 0.78rem; font-weight: 700; cursor: pointer; box-shadow: 0 10px 30px -10px rgba(0,0,0,0.6); }
+.voice-hint[hidden] { display: none; }
+.voice-hint svg { width: 15px; height: 15px; }
+.voice-hint:hover { color: var(--ink); }
+.chat-greet:not([hidden]) ~ .voice-hint, .voice-hint:has(~ .chat-greet:not([hidden])) { bottom: 200px; }
 /* salaam ka bubble - naye scan ki leads */
 .chat-greet { position: fixed; right: 20px; bottom: 84px; z-index: 7; width: 290px; max-width: calc(100vw - 40px); box-sizing: border-box;
               background: var(--over); border: 1px solid var(--accent-dim); border-radius: 14px 14px 4px 14px; padding: 12px 14px;

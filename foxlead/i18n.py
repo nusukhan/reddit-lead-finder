@@ -503,6 +503,7 @@ UR = {
     "found {ago}": "ملی {ago}",
     "posted {ago}": "پوسٹ ہوئی {ago}",
     "Sort leads": "لیڈز کی ترتیب",
+    "Tap to hear Foxlead": "Foxlead کی آواز سننے کے لیے ٹیپ کریں",
     "Sounds": "آوازیں",
     "Sounds on": "آوازیں چالو",
     "Sounds off": "آوازیں بند",

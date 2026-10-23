@@ -30,11 +30,12 @@
       audio = audio || new (window.AudioContext || window.webkitAudioContext)();
       if (audio.state === "suspended") audio.resume();
       let at = audio.currentTime + 0.01;
-      for (const [freq, len] of notes) {
+      for (const [freq, len, type = "sine", slideTo] of notes) {      // slideTo: aawaz upar/neeche phisle (robot jaisi)
         const osc = audio.createOscillator(), gain = audio.createGain();
-        osc.type = "sine"; osc.frequency.value = freq;
+        osc.type = type; osc.frequency.setValueAtTime(freq, at);
+        if (slideTo) osc.frequency.exponentialRampToValueAtTime(slideTo, at + len);
         gain.gain.setValueAtTime(0.0001, at);
-        gain.gain.exponentialRampToValueAtTime(0.18, at + 0.015);       // halki si - kaan na chubhe
+        gain.gain.exponentialRampToValueAtTime(type === "sine" ? 0.3 : 0.12, at + 0.015);   // square/saw tez hoti hain - kam rakho
         gain.gain.exponentialRampToValueAtTime(0.0001, at + len);
         osc.connect(gain).connect(audio.destination);
         osc.start(at); osc.stop(at + len + 0.02);
@@ -46,7 +47,8 @@
     send: [[660, 0.07]],
     reply: [[880, 0.12], [1320, 0.2]],
     greet: [[784, 0.12], [988, 0.12], [1175, 0.22]],
-    welcome: [[523, 0.1], [659, 0.1], [784, 0.2]],
+    // robot ki "beep-boop" - dashboard khulne par
+    robot: [[220, 0.12, "square", 440], [660, 0.09, "square"], [440, 0.09, "square"], [880, 0.14, "sawtooth", 1320], [1320, 0.28, "sine", 990]],
     error: [[330, 0.14], [247, 0.22]],
   };
   function showToggles() {
@@ -55,7 +57,10 @@
     speakBtn.setAttribute("aria-pressed", String(speakAll));
     speakBtn.title = t(speakAll ? "Reading answers aloud" : "Read answers aloud");
   }
-  soundBtn.addEventListener("click", () => { soundOn = !soundOn; store.set("foxlead-chat-sound", soundOn ? "1" : "0"); showToggles(); play(SOUND.send); });
+  soundBtn.addEventListener("click", () => {
+    soundOn = !soundOn; store.set("foxlead-chat-sound", soundOn ? "1" : "0"); showToggles(); play(SOUND.send);
+    if (!soundOn) { stopSpeaking(); $c("voice-hint").hidden = true; }
+  });
   speakBtn.addEventListener("click", () => {
     speakAll = !speakAll; store.set("foxlead-chat-speak", speakAll ? "1" : "0"); showToggles();
     if (!speakAll) stopSpeaking();
@@ -248,8 +253,44 @@
       if (greet.hidden) play(SOUND.greet);       // browser pehli click se pehle awaaz rok sakta hai - tab chup
       greet.hidden = false;
     } else if (!n) greet.hidden = true;
-    if (first && greet.hidden) play(SOUND.welcome);   // dashboard khulte hi chatbot ki dhun (salaam wali chime na baji ho to)
+    if (first) { helloLeads = n; maybeHello(); }     // dashboard khulte hi robot ki awaaz
   };
+
+  // ---------- dashboard khulte hi: robot ki beep-boop + robot ki awaaz mein salaam ----------
+  // Browser pehli click/tap se pehle awaaz nahi chalne deta. Tab button ke paas "Tap to hear" -
+  // aur page par kahin bhi pehli click hote hi robot bolta hai.
+  const hint = $c("voice-hint");
+  let helloLeads = null, helloDone = false;
+  function robotSay(text) {
+    if (!synth) return;
+    const u = new SpeechSynthesisUtterance(text);
+    const urdu = /[\u0600-\u06FF]/.test(text);
+    u.lang = urdu ? "ur-PK" : "en-US";
+    u.pitch = 0.35; u.rate = 0.92;                     // neechi, thehri hui - robot jaisi
+    const voices = synth.getVoices().filter(v => v.lang.replace("_", "-").toLowerCase().startsWith(urdu ? "ur" : "en"));
+    const male = voices.find(v => /male|david|guy|daniel|fred|alex|google uk english male/i.test(v.name));
+    if (male || voices[0]) u.voice = male || voices[0];
+    synth.speak(u);
+  }
+  function hello() {
+    if (helloDone || helloLeads === null || !soundOn) return;
+    helloDone = true; hint.hidden = true;
+    play(SOUND.robot);
+    const name = (typeof ME !== "undefined" && ME.name ? ME.name.split(" ")[0] : "");
+    const urduVoice = synth && synth.getVoices().some(v => v.lang.toLowerCase().startsWith("ur"));
+    const ur = document.documentElement.lang === "ur" && urduVoice;    // Urdu awaaz na ho to English mein bolo (warna ajeeb lagta hai)
+    const n = helloLeads;
+    const text = ur
+      ? `السلام علیکم ${name}۔ میں Foxlead ہوں۔ ` + (n ? `آپ کی ${n} نئی لیڈز ہیں۔` : "کچھ بھی پوچھیں۔")
+      : `Hello ${name}. Foxlead here. ` + (n ? `You have ${n} new lead${n === 1 ? "" : "s"}.` : "I'm ready. Ask me anything.");
+    setTimeout(() => robotSay(text), 900);             // pehle beep-boop, phir bolna
+  }
+  function maybeHello() {
+    if (!soundOn || helloDone) return;
+    const allowed = navigator.userActivation ? navigator.userActivation.hasBeenActive : false;
+    if (allowed) hello(); else hint.hidden = false;
+  }
+  hint.addEventListener("click", hello);
   $c("chat-greet-go").addEventListener("click", () => { hideGreet(); setLead(null); open(true); ask(t("Which of my new leads should I look at first?")); });
   $c("chat-greet-x").addEventListener("click", hideGreet);
 
@@ -298,13 +339,13 @@
   renderSuggest();
   showToggles();
 
-  // Browser pehli click/tap tak awaaz rok kar rakhta hai - us pehli click par rukki hui dhun baj jaye
-  const unlock = () => { if (audio && audio.state === "suspended") audio.resume(); };
-  document.addEventListener("pointerdown", unlock, { once: true });
-  document.addEventListener("keydown", unlock, { once: true });
+  // Browser pehli click/tap tak awaaz rok kar rakhta hai - pehli click par robot ka salaam
+  const unlock = () => { if (audio && audio.state === "suspended") audio.resume(); hello(); };
+  document.addEventListener("pointerdown", unlock, { once: true, capture: true });
+  document.addEventListener("keydown", unlock, { once: true, capture: true });
   // nayi leads hain aur chat abhi tak nahi khola: har 3 minute baad yaad dilao (zyada se zyada 3 baar)
   let reminders = 0;
   setInterval(() => {
-    if (reminders < 3 && box.hidden && !badge.hidden) { reminders++; play(SOUND.greet); }
+    if (reminders < 3 && box.hidden && !badge.hidden) { reminders++; play(SOUND.robot); }
   }, 3 * 60 * 1000);
 })();
