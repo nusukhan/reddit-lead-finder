@@ -6,7 +6,7 @@ import os
 import re
 import json
 import time
-from google import genai   # Google ka naya AI package (google-genai)
+import anthropic   # Claude ka official package
  
 # .env file se keys padho (laptop pe). GitHub pe .env nahi hota -
 # wahan keys seedhi environment (Secrets) se aati hain, to agar
@@ -17,14 +17,15 @@ try:
 except ImportError:
     pass
  
-api_key = os.getenv("GOOGLE_API_KEY")
+api_key = os.getenv("ANTHROPIC_API_KEY")
 if not api_key:
-    print("ERROR: GOOGLE_API_KEY nahi mili! .env check karo.")
+    print("ERROR: ANTHROPIC_API_KEY nahi mili! .env check karo.")
     exit(1)
- 
-client = genai.Client(api_key=api_key)
-# Google ka free model (naya naam). Tez aur bharosemand.
-MODEL_NAME = "gemini-3.8-flash"
+
+# max_retries: 429 / server error par SDK khud itni baar dobara try karta hai
+client = anthropic.Anthropic(api_key=api_key, max_retries=4)
+# Claude Haiku 5.5 - sabse sasta aur tez Claude model, scoring ke liye kaafi.
+MODEL_NAME = "claude-haiku-5-5"
  
 THRESHOLD = 7   # 7+ = lead (strong leads hi; 6 wale borderline the)
  
@@ -106,25 +107,39 @@ REASON: one short sentence"""
  
 def ask_llm(prompt):
     """
-    Google (Gemini) se jawab lo (naya google-genai package).
-    Free key mein per-minute limit hoti hai - limit lage to ruk ke dobara.
+    Claude (Haiku) se jawab lo.
+    SDK 429/server error par khud dobara try karta hai; phir bhi limit lage to ruk ke dobara.
     """
-    for attempt in range(4):
+    for attempt in range(3):
         try:
-            resp = client.models.generate_content(model=MODEL_NAME, contents=prompt)
-            return resp.text
-        except Exception as e:
-            msg = str(e)
-            # 429 / quota / rate = limit lag gayi -> thoda ruk
-            if "429" in msg or "quota" in msg.lower() or "rate" in msg.lower():
-                print("(limit, ruk...)", end=" ")
-                time.sleep(30)   # per-minute limit, 30 sec ruko
-                continue
-            # koi aur error -> ASLI message dikhao (pehli baar), phir chhodo
+            resp = client.messages.create(
+                model=MODEL_NAME,
+                max_tokens=2000,                     # thinking + chhota jawab dono isi mein
+                output_config={"effort": "low"},    # simple scoring - kam soch, kam kharcha
+                messages=[{"role": "user", "content": prompt}],
+            )
+        except anthropic.AuthenticationError:
+            # key galat hai - har post par yahi hoga, is liye poora script rok do
+            print("\n   [ERROR: ANTHROPIC_API_KEY galat hai - platform.claude.com par check karo]")
+            exit(1)
+        except anthropic.BadRequestError as e:
+            # jaise "credit balance too low" - dobara try ka faida nahi
+            print(f"\n   [ASLI ERROR: {e.message[:160]}]")
+            break
+        except anthropic.RateLimitError:
+            print("(limit, ruk...)", end=" ")
+            time.sleep(30)
+            continue
+        except (anthropic.APIStatusError, anthropic.APIConnectionError) as e:
             if attempt == 0:
-                print(f"\n   [ASLI ERROR: {msg[:160]}]")
-            time.sleep(3)
-    return "SCORE: 0\nREASON: Google se jawab nahi aaya"
+                print(f"\n   [ASLI ERROR: {str(e)[:160]}]")
+            time.sleep(5)
+            continue
+        if resp.stop_reason == "refusal":
+            break
+        # jawab mein thinking + text blocks hote hain - sirf text chahiye
+        return "".join(b.text for b in resp.content if b.type == "text")
+    return "SCORE: 0\nREASON: Claude se jawab nahi aaya"
  
  
 def get_score(answer):

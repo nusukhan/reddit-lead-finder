@@ -1,0 +1,5 @@
+{# kamyabi = hara ✓, maloomat = neela ℹ, baaki sab (ghalti) = laal ✕ #}
+{% for cat, msg in get_flashed_messages(with_categories=true) %}
+{% set kind = 'ok' if cat in ('success', 'ok') else ('info' if cat == 'info' else 'err') %}
+<div class="flash {{ kind }}" role="{{ 'alert' if kind == 'err' else 'status' }}">{{ msg }}</div>
+{% endfor %}

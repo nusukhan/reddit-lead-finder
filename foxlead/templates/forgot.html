@@ -1,0 +1,31 @@
+<!doctype html>
+<html lang="{{ lang }}" dir="{{ text_dir }}" translate="no">
+<head>
+<meta charset="utf-8">
+<meta name="viewport" content="width=device-width, initial-scale=1">
+<title>{{ _("Forgot password · Foxlead") }}</title>
+<link rel="stylesheet" href="{{ url_for('static', filename='foxlead.css') }}">
+{% include "_pwa.html" %}
+{% include "_lang_head.html" %}
+</head>
+<body>
+<main class="auth">
+  <div class="auth-card">
+    <div class="auth-top">{% include "_lang_switch.html" %}</div>
+    <div class="brand">{% include "_logo.html" %}<div class="brand-name">Fox<span>lead</span></div></div>
+    <h1>{{ _("Forgot your password?") }}</h1>
+    <p class="sub">{{ _("Enter your email and we'll send you a link to choose a new one.") }}</p>
+    {% include "_flash.html" %}
+    <form method="post" novalidate>
+      <input type="hidden" name="csrf_token" value="{{ csrf_token() }}">
+      <div class="field">
+        <label for="email">{{ _("Email") }}</label>
+        <input class="input" id="email" name="email" type="email" autocomplete="email" dir="ltr" required autofocus>
+      </div>
+      <button class="btn primary" type="submit">{{ _("Send reset link") }}</button>
+    </form>
+    <p class="switch"><a href="{{ url_for('login') }}">{{ _("← Back to log in") }}</a></p>
+  </div>
+</main>
+</body>
+</html>

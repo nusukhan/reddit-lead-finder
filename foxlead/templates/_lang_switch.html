@@ -1,0 +1,2 @@
+<a class="lang-switch" href="{{ url_for('set_language', code='en' if lang == 'ur' else 'ur', next=request.path) }}"
+   lang="{{ 'en' if lang == 'ur' else 'ur' }}" title="{{ _('Language') }}">{{ 'English' if lang == 'ur' else 'اردو' }}</a>

@@ -1,0 +1,136 @@
+# foxlead/professions.py
+# Ready-made profiles: user apna field chunta hai, form in values se bhar jaata hai,
+# phir user apni marzi se badal sakta hai.
+
+# Job boards jo robot padh sakta hai. Key = database mein post.source
+#   type rss      = RSS feed (url)
+#   type hn       = Hacker News ka mahana "Who is hiring?" thread
+#   type remoteok = Remote OK ki public API (shart: "Remote OK" naam + unke job page ka link dikhana)
+# NOTE: Remotive jaan-boojh kar NAHI hai - unki terms signup ke peeche jobs dikhane se mana karti hain.
+FEEDS = {
+    "larajobs":        {"label": "LaraJobs",                     "type": "rss", "url": "https://larajobs.com/feed"},
+    "wwr_fullstack":   {"label": "We Work Remotely · Full-Stack", "type": "rss", "url": "https://weworkremotely.com/categories/remote-full-stack-programming-jobs.rss"},
+    "wwr_backend":     {"label": "We Work Remotely · Back-End",   "type": "rss", "url": "https://weworkremotely.com/categories/remote-back-end-programming-jobs.rss"},
+    "wwr_frontend":    {"label": "We Work Remotely · Front-End",  "type": "rss", "url": "https://weworkremotely.com/categories/remote-front-end-programming-jobs.rss"},
+    "wwr_programming": {"label": "We Work Remotely · Programming", "type": "rss", "url": "https://weworkremotely.com/categories/remote-programming-jobs.rss"},
+    "wwr_devops":      {"label": "We Work Remotely · DevOps",     "type": "rss", "url": "https://weworkremotely.com/categories/remote-devops-sysadmin-jobs.rss"},
+    "wwr_design":      {"label": "We Work Remotely · Design",     "type": "rss", "url": "https://weworkremotely.com/categories/remote-design-jobs.rss"},
+    "hn_hiring":       {"label": "Hacker News · Who's hiring",   "type": "hn"},
+    "remoteok":        {"label": "Remote OK",                    "type": "remoteok"},
+}
+
+PROFESSIONS = [
+    {
+        "id": "laravel", "short": "LV", "color": "#e8803a",
+        "label": "Laravel / PHP developer",
+        "blurb": "Laravel, PHP and Vue apps — takeovers, fixes, new builds",
+        "skills": "Laravel, PHP, Vue, MySQL, Livewire",
+        "ideal_client": "Founders and companies with a live Laravel/PHP app that is broken, slow or lost its developer; companies hiring Laravel/PHP/Vue developers",
+        "subreddits": ["forhire", "laravel", "PHP", "webdev", "SaaS"],
+        "keywords": ["laravel", "php", "vue", "livewire", "inertia"],
+        "feeds": ["larajobs", "wwr_fullstack", "wwr_backend", "remoteok", "hn_hiring"],
+    },
+    {
+        "id": "javascript", "short": "JS", "color": "#d9a94e",
+        "label": "JavaScript developer",
+        "blurb": "React, Next.js and Node.js web apps",
+        "skills": "React, Next.js, Node.js, TypeScript",
+        "ideal_client": "Startups and businesses that need a React/Next.js front-end or a Node.js back-end built or fixed",
+        "subreddits": ["forhire", "reactjs", "nextjs", "node", "webdev", "SaaS"],
+        "keywords": ["react", "next.js", "nextjs", "node", "typescript", "javascript", "frontend"],
+        "feeds": ["wwr_fullstack", "wwr_frontend", "wwr_programming", "remoteok", "hn_hiring"],
+    },
+    {
+        "id": "python", "short": "PY", "color": "#3d82f6",
+        "label": "Python developer",
+        "blurb": "Django, FastAPI, scrapers and automations",
+        "skills": "Python, Django, FastAPI, Flask, PostgreSQL",
+        "ideal_client": "Businesses that need a Python back-end, API, scraper or automation built or fixed",
+        "subreddits": ["forhire", "django", "flask", "webdev", "SaaS"],
+        "keywords": ["python", "django", "fastapi", "flask", "scraper", "scraping", "automation"],
+        "feeds": ["wwr_backend", "wwr_fullstack", "wwr_programming", "remoteok", "hn_hiring"],
+    },
+    {
+        "id": "wordpress", "short": "WP", "color": "#38b2a8",
+        "label": "WordPress / Shopify developer",
+        "blurb": "Stores, themes, plugins and site fixes",
+        "skills": "WordPress, WooCommerce, Shopify, Elementor, PHP",
+        "ideal_client": "Small businesses and store owners who need a website or store built, fixed, sped up or customised",
+        "subreddits": ["forhire", "Wordpress", "shopify", "smallbusiness", "ecommerce"],
+        "keywords": ["wordpress", "woocommerce", "shopify", "elementor", "plugin", "theme", "website", "store"],
+        "feeds": ["wwr_programming", "wwr_fullstack", "remoteok"],
+    },
+    {
+        "id": "mobile", "short": "MB", "color": "#9a7cf0",
+        "label": "Mobile app developer",
+        "blurb": "Flutter, React Native, iOS and Android",
+        "skills": "Flutter, React Native, Swift, Kotlin, Firebase",
+        "ideal_client": "Founders and businesses who need a mobile app built, finished or fixed",
+        "subreddits": ["forhire", "startups", "FlutterDev", "reactnative", "androiddev", "iOSProgramming"],
+        "keywords": ["flutter", "react native", "ios", "android", "mobile app", "app developer", "swift", "kotlin"],
+        "feeds": ["wwr_programming", "wwr_fullstack", "remoteok", "hn_hiring"],
+    },
+    {
+        "id": "design", "short": "UX", "color": "#e87ba4",
+        "label": "UI/UX designer",
+        "blurb": "Product design, redesigns and landing pages",
+        "skills": "Figma, UI design, UX research, prototyping, design systems",
+        "ideal_client": "Startups and companies that need a product, app or website designed or redesigned",
+        "subreddits": ["forhire", "startups", "UI_Design", "userexperience", "web_design"],
+        "keywords": ["designer", "ui", "ux", "figma", "redesign", "landing page", "mockup", "prototype"],
+        "feeds": ["wwr_design", "remoteok"],
+    },
+    {
+        "id": "devops", "short": "DO", "color": "#35c08a",
+        "label": "DevOps / Cloud engineer",
+        "blurb": "AWS, Docker, Kubernetes and CI/CD",
+        "skills": "AWS, Docker, Kubernetes, Terraform, CI/CD, Linux",
+        "ideal_client": "Companies with deployment, scaling, server or cloud-cost problems",
+        "subreddits": ["forhire", "devops", "aws", "sysadmin", "selfhosted"],
+        "keywords": ["devops", "aws", "docker", "kubernetes", "terraform", "ci/cd", "deploy", "server", "cloud"],
+        "feeds": ["wwr_devops", "remoteok", "hn_hiring"],
+    },
+    {
+        "id": "data_ai", "short": "AI", "color": "#4aa3f2",
+        "label": "Data / AI engineer",
+        "blurb": "AI features, LLM apps and data pipelines",
+        "skills": "Python, LLMs, Claude/OpenAI APIs, RAG, data pipelines, SQL",
+        "ideal_client": "Businesses that want AI features, chatbots, automations or data dashboards built",
+        "subreddits": ["forhire", "datascience", "MachineLearning", "LocalLLaMA", "SaaS"],
+        "keywords": ["ai", "llm", "chatbot", "rag", "data engineer", "data pipeline", "etl", "ai engineer", "automation"],
+        "feeds": ["wwr_fullstack", "wwr_backend", "wwr_programming", "remoteok", "hn_hiring"],
+    },
+    {
+        "id": "ml", "short": "ML", "color": "#7b8cf0",
+        "label": "Machine learning engineer",
+        "blurb": "Model training, MLOps, computer vision and NLP",
+        "skills": "PyTorch, TensorFlow, scikit-learn, MLOps, computer vision, NLP",
+        "ideal_client": "Companies hiring ML engineers, and startups that need a model trained, fine-tuned, deployed or put into production",
+        "subreddits": ["forhire", "MachineLearning", "MLjobs", "datascience", "computervision"],
+        "keywords": ["machine learning", "ml", "ml engineer", "ai engineer", "mlops", "deep learning", "pytorch",
+                     "tensorflow", "computer vision", "nlp", "llm", "fine-tuning", "model training"],
+        "feeds": ["wwr_fullstack", "wwr_backend", "wwr_programming", "remoteok", "hn_hiring"],
+    },
+    {
+        "id": "qa", "short": "QA", "color": "#e07a74",
+        "label": "QA / Test engineer",
+        "blurb": "Manual and automated testing",
+        "skills": "Test automation, Playwright, Cypress, Selenium, manual QA",
+        "ideal_client": "Teams that need testing before a launch, or test automation set up",
+        "subreddits": ["forhire", "QualityAssurance", "softwaretesting", "SaaS"],
+        "keywords": ["qa", "testing", "tester", "test automation", "playwright", "cypress", "selenium", "bug"],
+        "feeds": ["wwr_fullstack", "wwr_programming", "remoteok"],
+    },
+    {
+        "id": "custom", "short": "+", "color": "#5a6472",
+        "label": "Something else",
+        "blurb": "Start from scratch and describe your own work",
+        "skills": "",
+        "ideal_client": "",
+        "subreddits": ["forhire"],
+        "keywords": [],
+        "feeds": [],
+    },
+]
+
+BY_ID = {p["id"]: p for p in PROFESSIONS}

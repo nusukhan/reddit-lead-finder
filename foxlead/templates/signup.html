@@ -1,0 +1,47 @@
+<!doctype html>
+<html lang="{{ lang }}" dir="{{ text_dir }}" translate="no">
+<head>
+<meta charset="utf-8">
+<meta name="viewport" content="width=device-width, initial-scale=1">
+<title>{{ _("Sign up · Foxlead") }}</title>
+<link rel="stylesheet" href="{{ url_for('static', filename='foxlead.css') }}">
+{% include "_pwa.html" %}
+{% include "_lang_head.html" %}
+</head>
+<body>
+<main class="auth">
+  <div class="auth-card">
+    <div class="auth-top">{% include "_lang_switch.html" %}</div>
+    <div class="brand">{% include "_logo.html" %}<div class="brand-name">Fox<span>lead</span></div></div>
+    <h1>{{ _("Find clients in your field") }}</h1>
+    <p class="sub">{{ _("Developers, designers, DevOps, data — Foxlead scans Reddit and job boards and emails you the leads worth your time.") }}</p>
+
+    {% include "_flash.html" %}
+
+    {% include "_google_button.html" %}
+    <div class="divider">{{ _("or") }}</div>
+
+    <form method="post" novalidate>
+      <input type="hidden" name="csrf_token" value="{{ csrf_token() }}">
+      <div class="field">
+        <label for="name">{{ _("Your name") }}</label>
+        <input class="input" id="name" name="name" autocomplete="name" value="{{ form.name }}" dir="auto" required autofocus>
+      </div>
+      <div class="field">
+        <label for="email">{{ _("Email") }}</label>
+        <input class="input" id="email" name="email" type="email" autocomplete="email" value="{{ form.email }}" dir="ltr" required>
+        <div class="hint">{{ _("Your leads are emailed here.") }}</div>
+      </div>
+      <div class="field">
+        <label for="password">{{ _("Password") }}</label>
+        <input class="input" id="password" name="password" type="password" autocomplete="new-password" minlength="8" dir="ltr" required>
+        <div class="hint">{{ _("At least 8 characters.") }}</div>
+      </div>
+      <button class="btn primary" type="submit">{{ _("Create account") }}</button>
+    </form>
+
+    <p class="switch">{{ _("Already have an account?") }} <a href="{{ url_for('login') }}">{{ _("Log in") }}</a></p>
+  </div>
+</main>
+</body>
+</html>

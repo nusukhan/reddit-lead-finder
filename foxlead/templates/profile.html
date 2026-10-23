@@ -1,0 +1,166 @@
+<!doctype html>
+<html lang="{{ lang }}" dir="{{ text_dir }}" translate="no">
+<head>
+<meta charset="utf-8">
+<meta name="viewport" content="width=device-width, initial-scale=1">
+<title>{{ _("Your profile · Foxlead") }}</title>
+<link rel="stylesheet" href="{{ url_for('static', filename='foxlead.css') }}">
+{% include "_pwa.html" %}
+{% include "_lang_head.html" %}
+</head>
+<body>
+<main class="page">
+  <nav class="topnav">
+    <div class="brand">{% include "_logo.html" %}<div class="brand-name">Fox<span>lead</span></div></div>
+    <span class="grow"></span>
+    {% include "_lang_switch.html" %}
+    {% if profile %}<a class="linkbtn" href="{{ url_for('dashboard') }}">{{ _("← Dashboard") }}</a>{% endif %}
+    <form method="post" action="{{ url_for('logout') }}" style="margin:0">
+      <input type="hidden" name="csrf_token" value="{{ csrf_token() }}">
+      <button class="linkbtn" type="submit">{{ _("Log out") }}</button>
+    </form>
+  </nav>
+
+  <h1>{% if profile %}{{ _("Your profile") }}{% else %}{{ _("Hi {name} — what do you do?", name=user.name) }}{% endif %}</h1>
+  <p class="lead-in">{{ _("Foxlead scores every post and job against this profile, so the better it describes you, the better your leads.") }}</p>
+
+  {% include "_flash.html" %}
+
+  <form method="post" id="profile-form">
+    <input type="hidden" name="csrf_token" value="{{ csrf_token() }}">
+
+    <p class="step">{{ _("Step 1 · Choose your field") }}</p>
+    <div class="prof-grid" role="radiogroup" aria-label="{{ _('Your field') }}">
+      {% for p in professions %}
+      <label class="prof">
+        <input type="radio" name="profession" value="{{ p.id }}" {% if profile and profile.profession == p.id %}checked{% endif %} required>
+        <span class="ic" style="background:{{ p.color }}">{{ p.short }}</span>
+        <span><span class="nm">{{ _(p.label) }}</span><span class="bl" style="display:block">{{ _(p.blurb) }}</span></span>
+      </label>
+      {% endfor %}
+    </div>
+
+    <p class="step">{{ _("Step 2 · Tell the AI about your work") }}</p>
+    <div class="form-card">
+      <div class="two">
+        <div class="field">
+          <label for="title">{{ _("Your title") }}</label>
+          <input class="input" id="title" name="title" value="{{ profile.title if profile else '' }}" placeholder="{{ _('e.g. Flutter developer') }}" dir="auto">
+        </div>
+        <div class="field">
+          <label for="country">{{ _("You work from (country)") }}</label>
+          <input class="input" id="country" name="country" value="{{ profile.country if profile else '' }}" placeholder="{{ _('e.g. Pakistan') }}" dir="auto">
+        </div>
+      </div>
+      <div class="field">
+        <label for="skills">{{ _("Skills") }}</label>
+        <input class="input" id="skills" name="skills" value="{{ profile.skills if profile else '' }}" placeholder="{{ _('e.g. Flutter, Firebase, REST APIs') }}" dir="auto">
+        <div class="hint">{{ _("Leads score high only when they actually need these skills.") }}</div>
+      </div>
+      <div class="field">
+        <label for="ideal_client">{{ _("Who is your ideal client or job?") }}</label>
+        <textarea class="textarea" id="ideal_client" name="ideal_client" placeholder="{{ _('e.g. Startup founders who need a mobile app built or fixed') }}" dir="auto">{{ profile.ideal_client if profile else '' }}</textarea>
+      </div>
+      <div class="field">
+        <label for="portfolio">{{ _("Portfolio or website (optional)") }}</label>
+        <input class="input" id="portfolio" name="portfolio" type="url" value="{{ profile.portfolio if profile and profile.portfolio else '' }}" placeholder="https://yourportfolio.com" dir="ltr">
+        <div class="hint">{{ _("AI reply drafts include this link.") }}</div>
+      </div>
+      <div class="field">
+        <label class="toggle-row"><input type="checkbox" name="remote_only" value="1" {% if not profile or profile.remote_only %}checked{% endif %}>
+          {{ _("Remote work only — skip jobs locked to another country") }}</label>
+      </div>
+    </div>
+
+    <p class="step">{{ _("Step 3 · Where should Foxlead look?") }}</p>
+    <div class="form-card">
+      <div class="field">
+        <label for="subreddits">{{ _("Subreddits") }}</label>
+        <input class="input" id="subreddits" name="subreddits" value="{{ profile.subreddits|join(', ') if profile else '' }}" placeholder="forhire, startups" dir="ltr">
+        <div class="hint">{{ _("Comma separated, without “r/”.") }}</div>
+      </div>
+      <div class="field">
+        <label for="keywords">{{ _("Keywords") }}</label>
+        <input class="input" id="keywords" name="keywords" value="{{ profile.keywords|join(', ') if profile else '' }}" placeholder="flutter, mobile app" dir="ltr">
+        <div class="hint">{{ _("Only posts that mention at least one of these (or your skills) are sent to the AI — this keeps it fast and cheap.") }}</div>
+      </div>
+      <div class="field">
+        <label for="blocklist">{{ _("Never show posts that mention") }}</label>
+        <input class="input" id="blocklist" name="blocklist" value="{{ profile.blocklist|join(', ') if profile and profile.blocklist else '' }}" placeholder="unpaid, equity only, internship" dir="ltr">
+        <div class="hint">{{ _("Words or company names, comma separated. Matching posts are hidden and never scored.") }}</div>
+      </div>
+      <div class="field">
+        <label>{{ _("Job boards") }}</label>
+        <div class="checks">
+          {% for key, f in feeds.items() %}
+          <label class="check"><input type="checkbox" name="feeds" value="{{ key }}" {% if profile and key in profile.feeds %}checked{% endif %}>{{ f.label }}</label>
+          {% endfor %}
+        </div>
+      </div>
+    </div>
+
+    <p class="step">{{ _("Step 4 · Alerts") }}</p>
+    <div class="form-card">
+      <div class="two">
+        <div class="field">
+          <label for="threshold">{{ _("Count a post as a lead from score") }}</label>
+          <select class="select" id="threshold" name="threshold">
+            {% for n in range(5, 10) %}
+            <option value="{{ n }}" {% if (profile.threshold if profile else 7) == n %}selected{% endif %}>{{ _("{n}+ out of 10", n=n) }}{% if n == 7 %}{{ _(" (recommended)") }}{% endif %}</option>
+            {% endfor %}
+          </select>
+        </div>
+        <div class="field" style="align-self:end">
+          <label class="toggle-row"><input type="checkbox" name="email_enabled" value="1" {% if not profile or profile.email_enabled %}checked{% endif %}>
+            {{ _("Email me new leads at {email}", email=user.email) }}</label>
+        </div>
+      </div>
+      <div class="field">
+        <label class="toggle-row"><input type="checkbox" name="weekly_report" value="1" {% if not profile or profile.weekly_report %}checked{% endif %}>
+          {{ _("Send me a weekly report every Monday (leads, replies, wins, earnings)") }}</label>
+      </div>
+    </div>
+
+    <p class="step">{{ _("Telegram alerts") }}</p>
+    <div class="form-card">
+      {% if not telegram.on %}
+        <p class="hint" style="margin:0">{{ _("Telegram alerts aren't switched on for this Foxlead server yet.") }}</p>
+      {% elif not telegram.allowed %}
+        <input type="hidden" name="telegram_alerts" value="{{ profile.telegram_alerts if profile else 'all' }}">
+        <p class="hint" style="margin:0 0 10px">{{ _("Telegram alerts are part of Pro.") }}</p>
+        <a class="btn" href="{{ url_for('billing') }}" style="width:auto">{{ _("See plans") }}</a>
+      {% elif telegram.connected %}
+        <div class="two">
+          <div class="field">
+            <label for="telegram_alerts">{{ _("Send me on Telegram") }}</label>
+            <select class="select" id="telegram_alerts" name="telegram_alerts">
+              <option value="all" {% if profile and profile.telegram_alerts == 'all' %}selected{% endif %}>{{ _('Every new lead') }}</option>
+              <option value="hot" {% if profile and profile.telegram_alerts == 'hot' %}selected{% endif %}>{{ _('Only HOT leads (brand-new, no replies yet)') }}</option>
+              <option value="off" {% if profile and profile.telegram_alerts == 'off' %}selected{% endif %}>{{ _('Nothing for now') }}</option>
+            </select>
+          </div>
+          <div class="field" style="align-self:end">
+            <span class="hint" style="color:var(--apply)">{{ _("✓ Telegram is connected.") }}</span>
+            <button class="linkbtn" type="submit" formaction="{{ url_for('telegram_disconnect') }}" formnovalidate>{{ _("Disconnect") }}</button>
+          </div>
+        </div>
+      {% else %}
+        <input type="hidden" name="telegram_alerts" value="{{ profile.telegram_alerts if profile else 'all' }}">
+        <p class="hint" style="margin:0 0 12px">{{ _("Get new leads on your phone the moment Foxlead finds them.") }}</p>
+        <div class="actions" style="justify-content:flex-start;margin-top:0">
+          <a class="btn" href="{{ telegram.link }}" target="_blank" rel="noopener" style="width:auto">{{ _("1 · Open Telegram and press Start") }}</a>
+          <button class="btn" type="submit" formaction="{{ url_for('telegram_check') }}" formnovalidate style="width:auto">{{ _("2 · I pressed Start — check") }}</button>
+        </div>
+      {% endif %}
+    </div>
+
+    <div class="actions">
+      <button class="btn primary" type="submit">{% if profile %}{{ _("Save profile") }}{% else %}{{ _("Start finding leads") }}{% endif %}</button>
+    </div>
+  </form>
+</main>
+
+<script type="application/json" id="professions-data">{{ professions|tojson }}</script>
+<script src="{{ url_for('static', filename='profile.js') }}"></script>
+</body>
+</html>

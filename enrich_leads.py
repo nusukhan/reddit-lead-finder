@@ -10,7 +10,7 @@ import time
 import re
 import requests
 import xml.etree.ElementTree as ET
-from google import genai   # Google ka naya AI package (google-genai)
+import anthropic   # Claude ka official package
  
 # .env se keys (laptop). GitHub pe .env nahi hota - keys environment
 # (Secrets) se aati hain, to dotenv na ho to bhi code chale.
@@ -20,31 +20,44 @@ try:
 except ImportError:
     pass
  
-api_key = os.getenv("GOOGLE_API_KEY")
+api_key = os.getenv("ANTHROPIC_API_KEY")
 if not api_key:
-    print("ERROR: GOOGLE_API_KEY nahi mili! .env check karo.")
+    print("ERROR: ANTHROPIC_API_KEY nahi mili! .env check karo.")
     exit(1)
- 
-client = genai.Client(api_key=api_key)
-MODEL_NAME = "gemini-3.8-flash"
- 
- 
+
+client = anthropic.Anthropic(api_key=api_key, max_retries=4)
+MODEL_NAME = "claude-haiku-5-5"
+
+
 def ask_llm(prompt):
-    """Google (Gemini) se jawab lo. Limit lage to ruk ke dobara."""
-    for attempt in range(4):
+    """Claude (Haiku) se jawab lo. Limit lage to ruk ke dobara."""
+    for attempt in range(3):
         try:
-            resp = client.models.generate_content(model=MODEL_NAME, contents=prompt)
-            return resp.text
-        except Exception as e:
-            msg = str(e)
-            if "429" in msg or "quota" in msg.lower() or "rate" in msg.lower():
-                print("(limit, ruk...)", end=" ")
-                time.sleep(30)
-                continue
+            resp = client.messages.create(
+                model=MODEL_NAME,
+                max_tokens=2000,
+                output_config={"effort": "low"},
+                messages=[{"role": "user", "content": prompt}],
+            )
+        except anthropic.AuthenticationError:
+            print("\n   [ERROR: ANTHROPIC_API_KEY galat hai - platform.claude.com par check karo]")
+            exit(1)
+        except anthropic.BadRequestError as e:
+            print(f"\n   [ASLI ERROR: {e.message[:160]}]")
+            break
+        except anthropic.RateLimitError:
+            print("(limit, ruk...)", end=" ")
+            time.sleep(30)
+            continue
+        except (anthropic.APIStatusError, anthropic.APIConnectionError) as e:
             if attempt == 0:
-                print(f"\n   [ASLI ERROR: {msg[:160]}]")
-            time.sleep(3)
-    return "COMPETITION: n/a\nWORTH: maybe\nNOTE: Google se jawab nahi aaya"
+                print(f"\n   [ASLI ERROR: {str(e)[:160]}]")
+            time.sleep(5)
+            continue
+        if resp.stop_reason == "refusal":
+            break
+        return "".join(b.text for b in resp.content if b.type == "text")
+    return "COMPETITION: n/a\nWORTH: maybe\nNOTE: Claude se jawab nahi aaya"
  
 headers = {"User-Agent": "lead-finder by Nusu"}
 ns = {"atom": "http://www.w3.org/2005/Atom"}

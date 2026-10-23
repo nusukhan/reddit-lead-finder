@@ -1,0 +1,104 @@
+/* foxlead.css - Foxlead design ke rang/fonts + login, signup aur profile pages */
+:root {
+  --bg: #0b0e15; --bg-2: #0e1219; --rail: #0f141d; --panel: #141a26;
+  --panel-2: #0f1522; --over: #121926; --line: #202a3a; --line-2: #1a2230;
+  --ink: #eef2f8; --soft: #9aa7bd; --faint: #5f6c82;
+  --accent: #3d82f6; --accent-2: #7db0ff; --accent-dim: #1d3a66; --accent-soft: #112542;
+  --glow: rgba(61,130,246,0.16); --grid: #18202e;
+  --apply: #35c08a; --apply-bg: #0f2a20; --apply-dim: #1c5a3f;
+  --reply: #4aa3f2; --reply-bg: #112339;
+  --skip: #e07a74; --skip-bg: #2a1614;
+  --maybe: #d9a94e; --maybe-bg: #2a2311;
+  --sans: -apple-system, BlinkMacSystemFont, "Segoe UI", Helvetica, Arial, sans-serif;
+  --mono: "SFMono-Regular", "Consolas", Menlo, monospace;
+  color-scheme: dark;
+}
+* { box-sizing: border-box; }
+html { background: var(--bg); }
+body { background: var(--bg); color: var(--ink); font: 14px/1.5 var(--sans); margin: 0; -webkit-font-smoothing: antialiased; }
+button, input, select, textarea { font: inherit; color: inherit; }
+:focus-visible { outline: 2px solid var(--accent-2); outline-offset: 2px; }
+a { color: var(--accent-2); }
+
+.logo { width: 32px; height: 32px; border-radius: 9px; flex: 0 0 auto; background: linear-gradient(140deg, var(--accent), var(--accent-2));
+        display: flex; align-items: center; justify-content: center; box-shadow: 0 0 0 1px rgba(61,130,246,0.4), 0 6px 16px var(--glow); }
+.logo svg { width: 18px; height: 18px; }
+.brand { display: flex; align-items: center; gap: 10px; }
+.brand-name { font-weight: 700; font-size: 1.06rem; letter-spacing: -0.01em; }
+.brand-name span { color: var(--accent); }
+
+/* ---------- auth (login / signup) ---------- */
+.auth { min-height: 100vh; display: flex; align-items: center; justify-content: center; padding: 32px 16px;
+        background: radial-gradient(600px 300px at 50% 0%, rgba(61,130,246,0.10), transparent 70%), var(--bg); }
+.auth-card { width: 100%; max-width: 400px; background: var(--bg-2); border: 1px solid var(--line); border-radius: 16px;
+             padding: 28px 26px 24px; box-shadow: 0 30px 70px -24px rgba(0,0,0,0.65); }
+.auth-card .brand { justify-content: center; margin-bottom: 22px; }
+.auth-card h1 { font-size: 1.35rem; margin: 0; text-align: center; letter-spacing: -0.02em; }
+.auth-card .sub { text-align: center; color: var(--soft); margin: 6px 0 22px; font-size: 0.88rem; }
+.field { margin-bottom: 14px; }
+.field label { display: block; font-size: 0.78rem; font-weight: 600; color: var(--soft); margin-bottom: 6px; }
+.input, .textarea, .select { width: 100%; background: var(--panel); border: 1px solid var(--line); border-radius: 9px; padding: 10px 13px; color: var(--ink); outline: none; }
+.input:focus, .textarea:focus, .select:focus { border-color: var(--accent-dim); box-shadow: 0 0 0 3px var(--glow); }
+.textarea { min-height: 72px; resize: vertical; line-height: 1.45; }
+.hint { font-size: 0.74rem; color: var(--faint); margin-top: 5px; }
+.btn { display: inline-flex; align-items: center; justify-content: center; gap: 9px; width: 100%; padding: 11px 14px; border-radius: 9px;
+       border: 1px solid var(--line); background: var(--panel); color: var(--ink); font-weight: 650; font-size: 0.9rem; cursor: pointer; text-decoration: none; }
+.btn:hover { border-color: var(--accent-dim); }
+.btn.primary { background: var(--accent); border-color: var(--accent); color: #fff; box-shadow: 0 4px 14px var(--glow); }
+.btn.primary:hover { filter: brightness(1.06); }
+.btn[aria-disabled="true"] { opacity: 0.5; pointer-events: none; }
+.btn svg { width: 18px; height: 18px; }
+.divider { display: flex; align-items: center; gap: 12px; color: var(--faint); font-size: 0.74rem; margin: 18px 0; text-transform: uppercase; letter-spacing: 0.08em; }
+.divider::before, .divider::after { content: ""; flex: 1; height: 1px; background: var(--line); }
+.switch { text-align: center; color: var(--soft); font-size: 0.86rem; margin-top: 18px; }
+/* messages: hara = kamyabi, laal = ghalti, neela = maloomat - har ek ke saath nishan bhi (sirf rang par bharosa nahi) */
+.flash { display: flex; gap: 10px; align-items: flex-start; border-radius: 9px; padding: 10px 13px; font-size: 0.86rem;
+         margin-bottom: 14px; border: 1px solid; line-height: 1.45; }
+.flash::before { flex: none; width: 18px; height: 18px; border-radius: 50%; display: inline-flex; align-items: center;
+                 justify-content: center; font-size: 0.7rem; font-weight: 800; color: #0b0e15; margin-top: 1px; }
+.flash.err  { background: var(--skip-bg);  color: #f6c2bd; border-color: #6a2d28; }
+.flash.err::before  { content: "✕"; background: var(--skip); }
+.flash.ok   { background: var(--apply-bg); color: #9debc8; border-color: var(--apply-dim); }
+.flash.ok::before   { content: "✓"; background: var(--apply); }
+.flash.info { background: var(--accent-soft); color: #c4dafc; border-color: var(--accent-dim); }
+.flash.info::before { content: "i"; background: var(--accent-2); font-family: Georgia, serif; font-style: italic; }
+
+/* ---------- profile ---------- */
+.page { max-width: 920px; margin: 0 auto; padding: 22px 16px 60px; }
+.topnav { display: flex; align-items: center; gap: 12px; margin-bottom: 26px; }
+.topnav .grow { flex: 1; }
+.linkbtn { background: none; border: 0; color: var(--soft); cursor: pointer; font-size: 0.86rem; padding: 6px 8px; text-decoration: none; }
+.linkbtn:hover { color: var(--ink); }
+.page h1 { font-size: 1.5rem; margin: 0; letter-spacing: -0.02em; }
+.page .lead-in { color: var(--soft); margin: 6px 0 22px; }
+.step { font-size: 0.66rem; text-transform: uppercase; letter-spacing: 0.1em; color: var(--accent-2); font-weight: 700; margin: 26px 0 10px; }
+.prof-grid { display: grid; grid-template-columns: repeat(auto-fill, minmax(200px, 1fr)); gap: 10px; }
+.prof { position: relative; display: flex; gap: 11px; align-items: flex-start; text-align: left; background: var(--panel); border: 1px solid var(--line);
+        border-radius: 12px; padding: 13px; cursor: pointer; }
+.prof:hover { border-color: var(--accent-dim); }
+.prof input { position: absolute; opacity: 0; pointer-events: none; }
+.prof:has(input:checked) { border-color: var(--accent); background: var(--accent-soft); box-shadow: 0 0 0 1px var(--accent); }
+.prof:has(input:focus-visible) { outline: 2px solid var(--accent-2); outline-offset: 2px; }
+.prof .ic { width: 34px; height: 34px; border-radius: 9px; flex: 0 0 auto; display: flex; align-items: center; justify-content: center; font-weight: 800; font-size: 0.74rem; color: #fff; }
+.prof .nm { font-weight: 650; font-size: 0.9rem; line-height: 1.3; }
+.prof .bl { font-size: 0.74rem; color: var(--soft); margin-top: 3px; line-height: 1.35; }
+.form-card { background: var(--panel); border: 1px solid var(--line); border-radius: 14px; padding: 18px; }
+.form-card .field:last-child { margin-bottom: 0; }
+.two { display: grid; grid-template-columns: 1fr 1fr; gap: 14px; }
+.checks { display: grid; grid-template-columns: repeat(auto-fill, minmax(230px, 1fr)); gap: 8px; }
+/* ".field label" (block) se zyada specific - warna checkbox text se chipak jata hai */
+.field label.check, .field label.toggle-row { display: flex; font-size: 0.86rem; font-weight: 500; margin-bottom: 0; }
+.check { display: flex; align-items: center; gap: 9px; background: var(--panel-2); border: 1px solid var(--line); border-radius: 9px; padding: 9px 11px; cursor: pointer; font-size: 0.84rem; }
+.check input { accent-color: var(--accent); width: 15px; height: 15px; margin: 0; }
+.toggle-row { display: flex; align-items: center; gap: 10px; font-size: 0.86rem; color: var(--soft); cursor: pointer; }
+.toggle-row input { accent-color: var(--accent); width: 16px; height: 16px; margin: 0; }
+.actions { display: flex; gap: 10px; justify-content: flex-end; margin-top: 22px; }
+.actions .btn { width: auto; padding: 11px 22px; }
+@media (max-width: 600px) { .two { grid-template-columns: 1fr; } .actions .btn { width: 100%; } }
+
+/* ---------- language switch (اردو / English) ---------- */
+.auth-top { display: flex; justify-content: flex-end; margin: -10px -8px 4px; }
+.lang-switch { font-size: 0.8rem; font-weight: 600; color: var(--soft); text-decoration: none; border: 1px solid var(--line);
+               border-radius: 20px; padding: 3px 12px; background: var(--panel); white-space: nowrap; }
+.lang-switch:hover { color: var(--ink); border-color: var(--accent-dim); }
+.lang-switch:lang(ur) { font-family: "Noto Naskh Arabic", var(--sans); font-size: 0.86rem; }

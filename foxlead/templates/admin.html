@@ -1,0 +1,108 @@
+<!doctype html>
+<html lang="en" translate="no">
+<head>
+<meta charset="utf-8">
+<meta name="viewport" content="width=device-width, initial-scale=1">
+<title>Admin · Foxlead</title>
+<link rel="stylesheet" href="{{ url_for('static', filename='foxlead.css') }}">
+{% include "_pwa.html" %}
+<link rel="stylesheet" href="{{ url_for('static', filename='dashboard.css') }}">
+<style>
+  .admin { max-width: 1160px; margin: 0 auto; padding: 22px 16px 60px; }
+  .admin h1 { font-size: 1.5rem; margin: 0; letter-spacing: -0.02em; }
+  .admin .lead-in { color: var(--soft); margin: 6px 0 18px; }
+  .admin .grid { padding: 0; grid-template-columns: repeat(4, 1fr); }
+  .admin h2 { font-size: 0.95rem; margin: 26px 0 10px; }
+  .admin .card .table-wrap { padding: 0; }
+  .admin table { min-width: 860px; }
+  .admin td small { display: block; color: var(--faint); font-size: 0.74rem; }
+  .tag { display: inline-block; font-size: 0.66rem; font-weight: 700; padding: 2px 8px; border-radius: 10px; background: var(--panel-2); color: var(--soft); border: 1px solid var(--line); margin-left: 6px; }
+  .tag.off { background: var(--skip-bg); color: var(--skip); border-color: #4a2522; }
+  .mini { font-size: 0.76rem; font-weight: 600; padding: 5px 11px; border-radius: 8px; border: 1px solid var(--line); background: var(--panel-2); color: var(--soft); cursor: pointer; }
+  .mini:hover { color: var(--ink); border-color: var(--accent-dim); }
+  .mini.danger:hover { color: var(--skip); border-color: #4a2522; }
+  @media (max-width: 900px) { .admin .grid { grid-template-columns: 1fr 1fr; } }
+</style>
+</head>
+<body>
+<main class="admin">
+  <nav class="topnav">
+    <div class="brand">{% include "_logo.html" %}<div class="brand-name">Fox<span>lead</span> <span class="tag">Admin</span></div></div>
+    <span class="grow"></span>
+    <a class="linkbtn" href="{{ url_for('dashboard') }}">← My dashboard</a>
+  </nav>
+
+  <h1>Admin</h1>
+  <p class="lead-in">Everyone using Foxlead, what they're doing, and what Claude is costing.</p>
+  {% include "_flash.html" %}
+
+  <div class="grid">
+    <div class="card"><div class="card-head"><h3>Users</h3></div><div class="bignum">{{ totals.users }}</div><div class="note">{{ totals.active7 }} logged in this week</div></div>
+    <div class="card"><div class="card-head"><h3>Leads found</h3></div><div class="bignum">{{ totals.leads }}</div><div class="note">all users, all time</div></div>
+    <div class="card"><div class="card-head"><h3>Scans</h3></div><div class="bignum">{{ totals.scans7 }}</div><div class="note">last 7 days · {{ totals.drafts30 }} AI drafts in 30 days</div></div>
+    <div class="card"><div class="card-head"><h3>Claude cost</h3></div><div class="bignum" style="color:var(--apply)">${{ "%.2f"|format(cost(totals.tin, totals.tout)) }}</div><div class="note">estimate, last 30 days</div></div>
+  </div>
+
+  <h2>Cost by type · last 30 days</h2>
+  <div class="card"><div class="table-wrap"><table style="min-width:520px">
+    <thead><tr><th>What</th><th>Calls</th><th>Input tokens</th><th>Output tokens</th><th>Cost (estimate)</th></tr></thead>
+    <tbody>
+      {% for k in by_kind %}
+      <tr><td>{{ {"score": "Scoring posts", "comments": "Comment checks", "draft": "AI reply drafts"}.get(k.kind, k.kind) }}</td>
+          <td class="mono">{{ k.calls }}</td><td class="mono">{{ "{:,}".format(k.tin or 0) }}</td><td class="mono">{{ "{:,}".format(k.tout or 0) }}</td>
+          <td class="mono">${{ "%.3f"|format(cost(k.tin, k.tout)) }}</td></tr>
+      {% else %}
+      <tr><td colspan="5" style="color:var(--faint)">No Claude calls in the last 30 days.</td></tr>
+      {% endfor %}
+    </tbody>
+  </table></div></div>
+
+  <h2>Users</h2>
+  <div class="card"><div class="table-wrap"><table>
+    <thead><tr><th>User</th><th>Field</th><th>Joined</th><th>Last login</th><th>Plan</th><th>Leads</th><th>Scans</th><th>Drafts</th><th>Cost · 30d</th><th></th></tr></thead>
+    <tbody>
+      {% for u in users %}
+      <tr>
+        <td><b>{{ u.name or "—" }}</b>{% if u.disabled %}<span class="tag off">Disabled</span>{% endif %}{% if is_admin(u) %}<span class="tag">Admin</span>{% endif %}
+            <small>{{ u.email }}{% if u.google_only %} · Google{% endif %}</small></td>
+        <td>{{ u.title or "— no profile yet" }}</td>
+        <td class="mono">{{ u.created_at[:10] }}</td>
+        <td class="mono">{{ (u.last_login_at or "—")[:10] }}</td>
+        <td>{% set p = plan_of(u) %}<span class="tag{{ '' if p == 'free' else '' }}" style="{{ 'color:var(--apply);border-color:var(--apply-dim);background:var(--apply-bg)' if p == 'pro' else '' }}">{{ PLANS[p].name }}</span>
+            <small>{{ {"stripe": "paying", "admin": "gift"}.get(u.plan_source, "") }}{{ " · team" if u.team_id else "" }}</small>
+            {% if not is_admin(u) and u.plan_source != 'stripe' %}
+            <form method="post" action="{{ url_for('admin_set_plan', uid=u.id) }}" style="margin:4px 0 0">
+              <input type="hidden" name="csrf_token" value="{{ csrf_token() }}">
+              <input type="hidden" name="plan" value="{{ 'free' if u.plan == 'pro' else 'pro' }}">
+              <button class="mini" type="submit">{{ "Make Free" if u.plan == 'pro' else "Give Pro" }}</button></form>{% endif %}</td>
+        <td class="mono">{{ u.leads }}</td>
+        <td class="mono">{{ u.scans }}<small>{{ ("last " ~ u.last_scan[:10]) if u.last_scan else "" }}</small></td>
+        <td class="mono">{{ u.drafts }}</td>
+        <td class="mono">${{ "%.3f"|format(cost(u.tin, u.tout)) }}</td>
+        <td>{% if u.id != user.id %}
+          <form method="post" action="{{ url_for('admin_toggle_user', uid=u.id) }}" style="margin:0"
+                onsubmit="return confirm('{{ 'Enable' if u.disabled else 'Disable' }} this account?')">
+            <input type="hidden" name="csrf_token" value="{{ csrf_token() }}">
+            <button class="mini {{ '' if u.disabled else 'danger' }}" type="submit">{{ "Enable" if u.disabled else "Disable" }}</button>
+          </form>{% endif %}</td>
+      </tr>
+      {% endfor %}
+    </tbody>
+  </table></div></div>
+
+  <h2>Recent scans</h2>
+  <div class="card"><div class="table-wrap"><table style="min-width:640px">
+    <thead><tr><th>When (UTC)</th><th>User</th><th>Result</th><th>Fetched</th><th>Scored</th><th>Leads</th></tr></thead>
+    <tbody>
+      {% for r in recent %}
+      <tr><td class="mono">{{ r.time[:16]|replace("T", " ") }}</td><td>{{ r.name or r.email }}</td>
+          <td><span class="pill {{ 'skip' if 'failed' in r.status else ('apply' if r.status in ('emailed', 'found') else 'muted') }}">{{ r.status|replace("_", " ") }}</span></td>
+          <td class="mono">{{ r.fetched }}</td><td class="mono">{{ r.scored }}</td><td class="mono">{{ r.leads }}</td></tr>
+      {% else %}
+      <tr><td colspan="6" style="color:var(--faint)">No scans yet.</td></tr>
+      {% endfor %}
+    </tbody>
+  </table></div></div>
+</main>
+</body>
+</html>

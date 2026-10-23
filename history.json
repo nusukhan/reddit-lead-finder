@@ -1,0 +1,21 @@
+{
+  "runs": [
+    {
+      "time": "2026-10-22T23:36:54Z",
+      "fetched": 213,
+      "new": 80,
+      "scored": 80,
+      "leads": 0,
+      "status": "no_leads"
+    },
+    {
+      "time": "2026-10-22T23:51:07Z",
+      "fetched": 192,
+      "new": 80,
+      "scored": 80,
+      "leads": 0,
+      "status": "no_leads"
+    }
+  ],
+  "leads": []
+}

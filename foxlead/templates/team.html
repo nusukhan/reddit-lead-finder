@@ -1,0 +1,96 @@
+<!doctype html>
+<html lang="{{ lang }}" dir="{{ text_dir }}" translate="no">
+<head>
+<meta charset="utf-8">
+<meta name="viewport" content="width=device-width, initial-scale=1">
+<title>{{ _("Team · Foxlead") }}</title>
+<link rel="stylesheet" href="{{ url_for('static', filename='foxlead.css') }}">
+{% include "_pwa.html" %}
+{% include "_lang_head.html" %}
+<style>
+  .rows { display: flex; flex-direction: column; gap: 8px; }
+  .row { display: flex; align-items: center; gap: 12px; background: var(--panel-2); border: 1px solid var(--line); border-radius: 10px; padding: 10px 12px; }
+  .row .who { flex: 1; min-width: 0; }
+  .row .who b { display: block; font-size: 0.9rem; }
+  .row .who span { font-size: 0.76rem; color: var(--faint); overflow-wrap: anywhere; }
+  .ava { width: 32px; height: 32px; border-radius: 50%; background: linear-gradient(140deg,#2e5bc0,#7db0ff); color: #fff; display: flex; align-items: center; justify-content: center; font-weight: 700; font-size: 0.8rem; flex: none; }
+  .tag { font-size: 0.66rem; font-weight: 700; padding: 2px 8px; border-radius: 10px; background: var(--accent-soft); color: var(--accent-2); border: 1px solid var(--accent-dim); }
+  .inline { display: flex; gap: 8px; } .inline .input { flex: 1; } .inline .btn { width: auto; white-space: nowrap; }
+  .mini { font-size: 0.76rem; font-weight: 600; padding: 5px 11px; border-radius: 8px; border: 1px solid var(--line); background: var(--panel); color: var(--soft); cursor: pointer; }
+  .mini:hover { color: var(--skip); }
+</style>
+</head>
+<body>
+<main class="page">
+  <nav class="topnav">
+    <div class="brand">{% include "_logo.html" %}<div class="brand-name">Fox<span>lead</span></div></div>
+    <span class="grow"></span>
+    {% include "_lang_switch.html" %}
+    <a class="linkbtn" href="{{ url_for('dashboard') }}">{{ _("← Dashboard") }}</a>
+  </nav>
+  <h1>{{ current.name if current else _("Team") }}</h1>
+  <p class="lead-in">{{ _("An agency team shares one profile, one set of leads and one pipeline. Assign each lead to whoever handles it.") }}</p>
+  {% include "_flash.html" %}
+
+  {% if not current %}
+    <div class="form-card">
+      {% if not can_create %}
+        <p style="margin:0 0 12px">{{ _("Teams are part of Pro.") }}</p>
+        <a class="btn primary" href="{{ url_for('billing') }}" style="width:auto">{{ _("See plans") }}</a>
+      {% elif not has_profile %}
+        <p style="margin:0 0 12px">{{ _("Set up your profile first — your team will share it.") }}</p>
+        <a class="btn primary" href="{{ url_for('profile') }}" style="width:auto">{{ _("Set up profile") }}</a>
+      {% else %}
+        <form method="post" action="{{ url_for('team_create') }}">
+          <input type="hidden" name="csrf_token" value="{{ csrf_token() }}">
+          <div class="field"><label for="name">{{ _("Team / agency name") }}</label>
+            <div class="inline"><input class="input" id="name" name="name" maxlength="60" placeholder="{{ _('e.g. Brevlox') }}" dir="auto" required>
+              <button class="btn primary" type="submit">{{ _("Create team") }}</button></div></div>
+        </form>
+      {% endif %}
+    </div>
+  {% else %}
+    <p class="step">{{ _("Members") }}</p>
+    <div class="rows">
+      {% for m in members %}
+      <div class="row">
+        <span class="ava">{{ (m.name or m.email)[:1]|upper }}</span>
+        <div class="who"><b>{{ m.name or m.email }}</b><span>{{ m.email }}</span></div>
+        {% if m.id == current.owner_id %}<span class="tag">{{ _("Owner") }}</span>{% endif %}
+        {% if mine and m.id != user.id %}
+        <form method="post" action="{{ url_for('team_remove', uid=m.id) }}" style="margin:0" onsubmit="return confirm({{ _('Remove this member from the team?')|tojson|forceescape }})">
+          <input type="hidden" name="csrf_token" value="{{ csrf_token() }}"><button class="mini" type="submit">{{ _("Remove") }}</button></form>
+        {% endif %}
+      </div>
+      {% endfor %}
+    </div>
+
+    {% if mine %}
+      <p class="step">{{ _("Invite someone") }}</p>
+      <div class="form-card">
+        <form method="post" action="{{ url_for('team_invite') }}">
+          <input type="hidden" name="csrf_token" value="{{ csrf_token() }}">
+          <div class="inline"><input class="input" name="email" type="email" placeholder="teammate@example.com" required aria-label="{{ _('Email to invite') }}" dir="ltr">
+            <button class="btn primary" type="submit">{{ _("Send invite") }}</button></div>
+          <div class="hint">{{ _("They join by opening the link while logged in with that email. Links work for 14 days.") }}</div>
+        </form>
+        {% if invites %}
+        <div class="rows" style="margin-top:12px">
+          {% for i in invites %}
+          <div class="row"><div class="who"><b>{{ i.email }}</b><span>{{ _("invited {date} · waiting", date=i.created_at[:10]) }}</span></div>
+            <form method="post" action="{{ url_for('team_invite_cancel', iid=i.id) }}" style="margin:0">
+              <input type="hidden" name="csrf_token" value="{{ csrf_token() }}"><button class="mini" type="submit">{{ _("Cancel") }}</button></form></div>
+          {% endfor %}
+        </div>
+        {% endif %}
+      </div>
+    {% else %}
+      <p class="hint" style="margin-top:14px">{{ _("The team profile and plan are managed by {name}.", name=current.owner_name or current.owner_email) }}</p>
+      <form method="post" action="{{ url_for('team_leave') }}" onsubmit="return confirm({{ _('Leave this team?')|tojson|forceescape }})">
+        <input type="hidden" name="csrf_token" value="{{ csrf_token() }}">
+        <button class="mini" type="submit">{{ _("Leave team") }}</button></form>
+    {% endif %}
+  {% endif %}
+</main>
+</body>
+</html>

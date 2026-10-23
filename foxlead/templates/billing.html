@@ -1,0 +1,82 @@
+<!doctype html>
+<html lang="{{ lang }}" dir="{{ text_dir }}" translate="no">
+<head>
+<meta charset="utf-8">
+<meta name="viewport" content="width=device-width, initial-scale=1">
+<title>{{ _("Plan & billing · Foxlead") }}</title>
+<link rel="stylesheet" href="{{ url_for('static', filename='foxlead.css') }}">
+{% include "_pwa.html" %}
+{% include "_lang_head.html" %}
+<style>
+  .plans { display: grid; grid-template-columns: 1fr 1fr; gap: 14px; margin-top: 18px; }
+  .plan { background: var(--panel); border: 1px solid var(--line); border-radius: 14px; padding: 20px; display: flex; flex-direction: column; }
+  .plan.cur { border-color: var(--accent); box-shadow: 0 0 0 1px var(--accent); }
+  .plan h2 { margin: 0; font-size: 1.1rem; display: flex; align-items: center; gap: 8px; }
+  .plan .price { font-family: var(--mono); font-size: 1.9rem; font-weight: 700; margin: 10px 0 4px; }
+  .plan .price small { font-size: 0.85rem; color: var(--faint); font-weight: 500; }
+  .plan ul { list-style: none; padding: 0; margin: 12px 0 18px; display: flex; flex-direction: column; gap: 8px; font-size: 0.88rem; color: var(--soft); }
+  .plan li::before { content: "✓"; color: var(--apply); font-weight: 700; margin-right: 8px; }
+  .plan li.no::before { content: "–"; color: var(--faint); }
+  .plan .btn { margin-top: auto; }
+  .badge-cur { font-size: 0.66rem; font-weight: 700; color: var(--accent-2); background: var(--accent-soft); border: 1px solid var(--accent-dim); border-radius: 20px; padding: 2px 9px; }
+  @media (max-width: 640px) { .plans { grid-template-columns: 1fr; } }
+</style>
+</head>
+<body>
+<main class="page">
+  <nav class="topnav">
+    <div class="brand">{% include "_logo.html" %}<div class="brand-name">Fox<span>lead</span></div></div>
+    <span class="grow"></span>
+    {% include "_lang_switch.html" %}
+    <a class="linkbtn" href="{{ url_for('dashboard') }}">{{ _("← Dashboard") }}</a>
+  </nav>
+  <h1>{{ _("Plan & billing") }}</h1>
+  <p class="lead-in">{{ _("You're on {plan}", plan=PLANS[plan].name) }}{% if member %}{{ _(" through your team") }}{% elif admin_gift %}{{ _(" (given by the Foxlead team)") }}{% endif %}.</p>
+  {% include "_flash.html" %}
+
+  {% set free, pro = PLANS.free, PLANS.pro %}
+  <div class="plans">
+    <section class="plan {{ 'cur' if plan == 'free' }}">
+      <h2>Free {% if plan == 'free' %}<span class="badge-cur">{{ _("Current") }}</span>{% endif %}</h2>
+      <div class="price">$0 <small>{{ _("/ month") }}</small></div>
+      <ul>
+        <li>{{ _("Scans once a day") }}</li>
+        <li>{{ _("{n} AI reply drafts a day", n=free.drafts_per_day) }}</li>
+        <li>{{ _("{n} chatbot messages a day", n=free.chat_per_day) }}</li>
+        <li>{{ _("Email alerts, pipeline board, notes & reminders") }}</li>
+        <li class="no">{{ _("Telegram alerts") }}</li>
+        <li class="no">{{ _("Weekly report") }}</li>
+        <li class="no">{{ _("Team accounts") }}</li>
+      </ul>
+    </section>
+    <section class="plan {{ 'cur' if plan == 'pro' }}">
+      <h2>Pro {% if plan == 'pro' %}<span class="badge-cur">{{ _("Current") }}</span>{% endif %}</h2>
+      <div class="price">${{ pro.price }} <small>{{ _("/ month") }}</small></div>
+      <ul>
+        <li>{{ _("Scans every hour + “Scan now”") }}</li>
+        <li>{{ _("{n} AI reply drafts a day", n=pro.drafts_per_day) }}</li>
+        <li>{{ _("{n} chatbot messages a day", n=pro.chat_per_day) }}</li>
+        <li>{{ _("Telegram alerts, including HOT leads") }}</li>
+        <li>{{ _("Weekly report every Monday") }}</li>
+        <li>{{ _("Team accounts for agencies") }}</li>
+      </ul>
+      {% if member %}
+        <p class="hint">{{ _("Your plan comes from your team owner.") }}</p>
+      {% elif plan == 'pro' and user.stripe_customer_id %}
+        <form method="post" action="{{ url_for('billing_portal') }}"><input type="hidden" name="csrf_token" value="{{ csrf_token() }}">
+          <button class="btn" type="submit">{{ _("Manage subscription") }}</button></form>
+      {% elif plan == 'pro' %}
+        <p class="hint">{{ _("Pro is active on your account.") }}</p>
+      {% elif stripe_ready %}
+        <form method="post" action="{{ url_for('billing_checkout') }}"><input type="hidden" name="csrf_token" value="{{ csrf_token() }}">
+          <button class="btn primary" type="submit">{{ _("Upgrade to Pro — ${n}/month", n=pro.price) }}</button></form>
+        <p class="hint" style="text-align:center">{{ _("Secure payment by Stripe. Cancel any time.") }}</p>
+      {% else %}
+        <button class="btn primary" type="button" aria-disabled="true">{{ _("Upgrade coming soon") }}</button>
+        <p class="hint" style="text-align:center">{{ _("Payments aren't switched on yet.") }}</p>
+      {% endif %}
+    </section>
+  </div>
+</main>
+</body>
+</html>

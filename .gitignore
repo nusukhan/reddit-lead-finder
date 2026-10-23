@@ -6,6 +6,11 @@ posts.json
 matched_posts.json
 leads.json
 scored.json
+dashboard/
+# web app ka database + login secret key - KABHI GitHub pe nahi
+instance/
+# NOTE: history.json bhi JAAN-BOOJH kar ignore NAHI kiya - dashboard ka saara
+# data (runs + emailed leads) usi mein hai, GitHub ko har ghante yaad rakhna hai.
 leads.html
 email-safe-rendered.html
 # NOTE: seen.json ko JAAN-BOOJH kar ignore NAHI kiya - GitHub ko use
@@ -24,3 +29,6 @@ __pycache__/
 .DS_Store
 Thumbs.db
  
+# ===== Databases (user data) - KABHI GitHub pe nahi =====
+*.db
+*.sqlite3

@@ -1,0 +1,50 @@
+/* rtl.css - Urdu (دائیں سے بائیں). Sirf tab load hoti hai jab zubaan Urdu ho.
+   Har rule html[dir="rtl"] se shuru hota hai - taake page ki doosri CSS (chahe baad mein
+   load ho) inhe dabaa na sake. Flex/grid khud palat jaate hain; yahan sirf wo cheezen hain
+   jo "left/right" se fixed thin. */
+
+html[dir="rtl"] body, html[dir="rtl"] button, html[dir="rtl"] input, html[dir="rtl"] select, html[dir="rtl"] textarea {
+  font-family: "Noto Naskh Arabic", var(--sans);
+}
+html[dir="rtl"] body { line-height: 1.75; }
+/* numbers, scores, code-like cheezen - wahi saaf font */
+html[dir="rtl"] :is(.mono, .score, .bignum, .comp, .trend, .num, .count, .badge, .kcard .money, .kcol-head .sum,
+  .kcol-head .n, .xaxis, .cl, .price, input[type=number], input[type=date], input[type=email], input[type=password]) {
+  font-family: var(--mono);
+}
+/* chart ki tareekhein baayein se daayein hi achhi lagti hain */
+html[dir="rtl"] :is(.chart-box, .xaxis, .spread) { direction: ltr; }
+
+/* menu (rail) daayein taraf */
+html[dir="rtl"] .rail { border-right: 0; border-left: 1px solid var(--line); }
+html[dir="rtl"] :is(.nav button, .nav a, .menu a, .menu button, .prof, thead th) { text-align: right; }
+html[dir="rtl"] .bar-row .num { text-align: left; }
+
+/* "aakhir mein dhakelo" wale items: RTL mein aakhir = baayein */
+html[dir="rtl"] :is(.nav .count, .panel-close, .kcol-head .n, .toast button, .kcard .money) { margin-left: 0; margin-right: auto; }
+
+/* upar ke chhote dabbe */
+html[dir="rtl"] .iconbtn .badge { right: auto; left: -5px; }
+html[dir="rtl"] .menu { right: auto; left: 0; }
+html[dir="rtl"] .draft-box .tag { left: auto; right: 12px; }
+
+/* lead panel baayein se khule */
+html[dir="rtl"] .panel { right: auto; left: 0; border-left: 0; border-right: 1px solid var(--line);
+  transform: translateX(-100%); box-shadow: 20px 0 50px -20px rgba(0,0,0,0.7); }
+html[dir="rtl"] .panel.show { transform: translateX(0); }
+
+/* AI ki wajah wala dabba: neeli lakeer daayein */
+html[dir="rtl"] .reason { border-left: 0; border-right: 3px solid var(--accent); border-radius: 10px 0 0 10px; }
+
+/* chatbot baayein kone mein */
+html[dir="rtl"] :is(.chat-fab, .chat) { right: auto; left: 20px; }
+html[dir="rtl"] .msg.user { border-bottom-right-radius: 12px; border-bottom-left-radius: 4px; }
+html[dir="rtl"] .msg.assistant { border-bottom-left-radius: 12px; border-bottom-right-radius: 4px; }
+@media (max-width: 560px) { html[dir="rtl"] .chat { right: auto; left: 8px; } }
+@media (max-width: 720px) { html[dir="rtl"] .rail { border-left: 0; } }
+
+/* billing page ki ✓ */
+html[dir="rtl"] .plan li::before { margin-right: 0; margin-left: 8px; }
+
+/* "Open post" ka teer RTL mein ulti taraf */
+html[dir="rtl"] #p-open svg { transform: scaleX(-1); }

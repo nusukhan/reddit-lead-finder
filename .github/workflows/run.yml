@@ -17,7 +17,12 @@ jobs:
     runs-on: ubuntu-latest
     timeout-minutes: 30      # 30 min se zyada chale to rok do (atak na jaye)
     permissions:
-      contents: write        # seen.json ko wapas repo mein save karne ke liye
+      contents: write        # seen.json/history.json ko wapas repo mein save karne ke liye
+      pages: write           # dashboard ko GitHub Pages par daalne ke liye
+      id-token: write        # (deploy-pages ko yeh bhi chahiye)
+    environment:
+      name: github-pages
+      url: ${{ steps.deployment.outputs.page_url }}
 
     steps:
       # 1) Tumhara code laao
@@ -37,20 +42,32 @@ jobs:
       # 4) run_all.py chalao - keys Secrets se environment mein aati hain
       - name: Run lead finder
         env:
-          GOOGLE_API_KEY: ${{ secrets.GOOGLE_API_KEY }}
+          ANTHROPIC_API_KEY: ${{ secrets.ANTHROPIC_API_KEY }}
           GMAIL_ADDRESS: ${{ secrets.GMAIL_ADDRESS }}
           GMAIL_APP_PASSWORD: ${{ secrets.GMAIL_APP_PASSWORD }}
           TO_EMAIL: ${{ secrets.TO_EMAIL }}
         run: python run_all.py
 
-      # 5) seen.json ko repo mein wapas save karo (dedup yaad rahe agli baar)
-      #    GitHub har baar nayi machine deta hai, is liye seen.json ko
-      #    commit karna padta hai warna har ghante wahi purani leads aayengi.
-      - name: Save seen.json
+      # 5) seen.json + history.json ko repo mein wapas save karo
+      #    GitHub har baar nayi machine deta hai, is liye inhe commit karna
+      #    padta hai - warna dedup aur dashboard ki history har ghante mit jaye.
+      - name: Save seen.json + history.json
         if: always()          # email fail bhi ho to bhi jo mila woh yaad rakho
         run: |
           git config user.name "lead-finder-bot"
           git config user.email "bot@users.noreply.github.com"
-          git add seen.json || true
-          git commit -m "update seen.json [skip ci]" || echo "kuch naya nahi, commit skip"
+          git add seen.json history.json || true
+          git commit -m "update seen.json + history.json [skip ci]" || echo "kuch naya nahi, commit skip"
           git push || echo "push skip"
+
+      # 6) Dashboard (dashboard/index.html) ko GitHub Pages par daalo
+      - name: Upload dashboard
+        if: always()
+        uses: actions/upload-pages-artifact@v3
+        with:
+          path: dashboard
+
+      - name: Deploy dashboard
+        if: always()
+        id: deployment
+        uses: actions/deploy-pages@v4

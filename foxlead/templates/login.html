@@ -1,0 +1,42 @@
+<!doctype html>
+<html lang="{{ lang }}" dir="{{ text_dir }}" translate="no">
+<head>
+<meta charset="utf-8">
+<meta name="viewport" content="width=device-width, initial-scale=1">
+<title>{{ _("Log in · Foxlead") }}</title>
+<link rel="stylesheet" href="{{ url_for('static', filename='foxlead.css') }}">
+{% include "_pwa.html" %}
+{% include "_lang_head.html" %}
+</head>
+<body>
+<main class="auth">
+  <div class="auth-card">
+    <div class="auth-top">{% include "_lang_switch.html" %}</div>
+    <div class="brand">{% include "_logo.html" %}<div class="brand-name">Fox<span>lead</span></div></div>
+    <h1>{{ _("Welcome back") }}</h1>
+    <p class="sub">{{ _("Log in to see the leads picked for you.") }}</p>
+
+    {% include "_flash.html" %}
+
+    {% include "_google_button.html" %}
+    <div class="divider">{{ _("or") }}</div>
+
+    <form method="post" novalidate>
+      <input type="hidden" name="csrf_token" value="{{ csrf_token() }}">
+      <div class="field">
+        <label for="email">{{ _("Email") }}</label>
+        <input class="input" id="email" name="email" type="email" autocomplete="email" value="{{ email }}" dir="ltr" required autofocus>
+      </div>
+      <div class="field">
+        <label for="password" style="display:flex;justify-content:space-between">{{ _("Password") }}
+          <a href="{{ url_for('forgot') }}" style="font-weight:500">{{ _("Forgot password?") }}</a></label>
+        <input class="input" id="password" name="password" type="password" autocomplete="current-password" dir="ltr" required>
+      </div>
+      <button class="btn primary" type="submit">{{ _("Log in") }}</button>
+    </form>
+
+    <p class="switch">{{ _("New to Foxlead?") }} <a href="{{ url_for('signup') }}">{{ _("Create an account") }}</a></p>
+  </div>
+</main>
+</body>
+</html>

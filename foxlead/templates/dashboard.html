@@ -1,0 +1,216 @@
+<!doctype html>
+<html lang="{{ lang }}" dir="{{ text_dir }}" translate="no">
+<head>
+<meta charset="utf-8">
+<meta name="viewport" content="width=device-width, initial-scale=1">
+<meta name="csrf-token" content="{{ csrf_token() }}">
+<title>{{ _("Dashboard · Foxlead") }}</title>
+<link rel="stylesheet" href="{{ url_for('static', filename='foxlead.css') }}">
+{% include "_pwa.html" %}
+<link rel="stylesheet" href="{{ url_for('static', filename='dashboard.css') }}">
+{% include "_lang_head.html" %}   {# RTL sab se aakhir - taake dashboard.css ki left/right ko badal sake #}
+</head>
+<body>
+<div class="app">
+  <div class="frame">
+
+    <aside class="rail">
+      <div class="brand">{% include "_logo.html" %}<div class="brand-name">Fox<span>lead</span></div></div>
+      <div class="nav-label">{{ _("Workspace") }}</div>
+      <nav class="nav" id="nav">
+        <button type="button" class="on" data-s="leads"><svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><path d="M3 3v18h18"/><path d="M7 14l4-4 3 3 5-6"/></svg>{{ _("Leads") }}<span class="count" id="c-leads"></span></button>
+        <button type="button" data-s="pipeline"><svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><rect x="3" y="4" width="5" height="16" rx="1.5"/><rect x="10" y="4" width="5" height="11" rx="1.5"/><rect x="17" y="4" width="4" height="7" rx="1.5"/></svg>{{ _("Pipeline") }}<span class="count" id="c-pipeline"></span></button>
+        <button type="button" data-s="sources"><svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><path d="M12 2a7 7 0 0 0-7 7c0 5 7 13 7 13s7-8 7-13a7 7 0 0 0-7-7z"/><circle cx="12" cy="9" r="2.5"/></svg>{{ _("Sources") }}<span class="count" id="c-sources"></span></button>
+        <button type="button" data-s="replies"><svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><path d="M4 4h16v12H5.2L4 18z"/></svg>{{ _("Replies") }}<span class="count" id="c-replies"></span></button>
+        <button type="button" data-s="won"><svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><path d="M9 11l3 3 8-8"/><path d="M21 12v7a2 2 0 0 1-2 2H5a2 2 0 0 1-2-2V5a2 2 0 0 1 2-2h11"/></svg>{{ _("Won") }}<span class="count" id="c-won"></span></button>
+        <button type="button" data-s="reports"><svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><rect x="3" y="4" width="18" height="16" rx="2"/><path d="M7 9h10M7 13h6"/></svg>{{ _("Reports") }}</button>
+        <div class="sep"></div>
+        {% if not is_member(user) %}<a href="{{ url_for('profile') }}"><svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><circle cx="12" cy="8" r="4"/><path d="M4 21a8 8 0 0 1 16 0"/></svg>{{ _("Field & profile") }}</a>{% endif %}
+        <a href="{{ url_for('team') }}"><svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><circle cx="9" cy="8" r="3.5"/><path d="M2.5 20a6.5 6.5 0 0 1 13 0"/><path d="M16 4.5a3.5 3.5 0 0 1 0 7M18 13.5a6.5 6.5 0 0 1 3.5 6.5"/></svg>{{ _("Team") }}</a>
+        <a href="{{ url_for('billing') }}"><svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><rect x="2.5" y="5" width="19" height="14" rx="2"/><path d="M2.5 10h19"/></svg>{{ _("Plan") }}<span class="count">{{ PLANS[plan_of(user)].name }}</span></a>
+      </nav>
+      <div class="rail-card">
+        <div class="k"><span class="dot idle" id="engine-dot"></span>{{ _("Engine status") }}</div>
+        <div class="big" id="engine-big">—</div>
+        <div class="sub" id="engine-sub">{{ _("waiting for the first scan") }}</div>
+      </div>
+    </aside>
+
+    <div class="main">
+      <div class="topbar">
+        <label class="search"><svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round" aria-hidden="true"><circle cx="11" cy="11" r="7"/><line x1="21" y1="21" x2="16.65" y2="16.65"/></svg><input type="search" id="q" placeholder="{{ _('Search leads…') }}" aria-label="{{ _('Search leads…') }}"></label>
+        <span class="daterange"><svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round" aria-hidden="true"><rect x="3" y="4" width="18" height="18" rx="2"/><path d="M16 2v4M8 2v4M3 10h18"/></svg>
+          <select id="range" aria-label="{{ _('Date range') }}"><option value="7">{{ _("Last 7 days") }}</option><option value="30" selected>{{ _("Last 30 days") }}</option><option value="90">{{ _("Last 90 days") }}</option><option value="0">{{ _("All time") }}</option></select></span>
+        {% include "_lang_switch.html" %}
+        <button type="button" class="iconbtn" id="bell" aria-label="{{ _('Leads to act on') }}"><svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><path d="M18 8a6 6 0 0 0-12 0c0 7-3 9-3 9h18s-3-2-3-9"/><path d="M13.7 21a2 2 0 0 1-3.4 0"/></svg><span class="badge" id="bell-badge" hidden></span></button>
+        <div class="me">
+          <button type="button" class="avatar-me" id="me-btn" aria-haspopup="true" aria-expanded="false" aria-label="{{ _('Account menu') }}">{{ (user.name or user.email)[:1]|upper }}</button>
+          <div class="menu" id="me-menu" hidden>
+            <div class="who"><b>{{ user.name }}</b><span>{{ user.email }}</span></div>
+            {% if not is_member(user) %}<a href="{{ url_for('profile') }}">{{ _("Change field & profile") }}</a>{% endif %}
+            <a href="{{ url_for('team') }}">{{ _("Team") }}</a>
+            <a href="{{ url_for('billing') }}">{{ _("Plan & billing ({plan})", plan=PLANS[plan_of(user)].name) }}</a>
+            <a href="{{ url_for('set_language', code='en' if lang == 'ur' else 'ur', next='/dashboard') }}">{{ _("Language") }}: {{ 'English' if lang == 'ur' else 'اردو' }}</a>
+            {% if is_admin(user) %}<a href="{{ url_for('admin') }}">{{ _("Admin panel") }}</a>{% endif %}
+            <form method="post" action="{{ url_for('logout') }}" style="margin:0">
+              <input type="hidden" name="csrf_token" value="{{ csrf_token() }}">
+              <button type="submit">{{ _("Log out") }}</button>
+            </form>
+          </div>
+        </div>
+      </div>
+      <div class="toast" id="toast" hidden><span id="toast-text"></span><button type="button" id="toast-action" hidden></button></div>
+      {% if get_flashed_messages() %}<div style="margin:12px 22px 0">{% include "_flash.html" %}</div>{% endif %}
+      {% if not user.email_verified %}
+      <div class="toast" id="verify-banner" style="background:var(--maybe-bg);border-color:#4a3c1c">
+        <span>{{ _("Please confirm your email ({email}) — until then Foxlead can't email you leads. Check your inbox for our link.", email=user.email) }}</span>
+        <button type="button" id="verify-resend">{{ _("Resend email") }}</button>
+      </div>
+      {% endif %}
+
+      <div class="screen on" id="s-leads">
+        <div class="titlerow">
+          <div class="grow"><h1>{{ _("Leads") }}</h1><p class="sub" id="leads-sub">{{ _("Fresh posts, scored for you — newest on top.") }}</p></div>
+          <span class="live"><span class="dot idle" id="live-dot"></span><span id="live-text">{{ _("Checks every hour") }}</span></span>
+          <button type="button" class="scanbtn" id="scan"><svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2.2" stroke-linecap="round" stroke-linejoin="round"><path d="M21 12a9 9 0 1 1-3-6.7L21 8"/><path d="M21 3v5h-5"/></svg><span>{{ _("Scan now") }}</span></button>
+        </div>
+        <div class="grid">
+          <div class="card">
+            <div class="card-head"><h3 id="found-title">{{ _("Leads found") }}</h3><span class="trend" id="found-trend"></span></div>
+            <div class="bignum" id="found-num">0</div>
+            <div class="chart-box" id="found-chart"></div>
+            <div class="xaxis" id="found-axis"></div>
+          </div>
+          <div class="card">
+            <div class="card-head"><h3>{{ _("By source") }}</h3></div>
+            <div class="bars" id="by-source"></div>
+            <div class="card-head" style="margin-top:16px;"><h3>{{ _("Hit rate") }}</h3></div>
+            <div style="display:flex;align-items:center;gap:12px;margin-top:6px;" id="hit-rate"></div>
+          </div>
+          <div class="card">
+            <div class="card-head"><h3>{{ _("Score spread") }}</h3></div>
+            <div class="spread" id="spread"></div>
+            <div style="font-size:0.74rem;color:var(--faint);margin-top:12px;line-height:1.5;" id="spread-note"></div>
+          </div>
+        </div>
+        <div class="filters" id="filters">
+          <button type="button" class="chip" data-f="all">{{ _("All") }}</button>
+          <button type="button" class="chip" data-f="todo">{{ _("To do") }}</button>
+          <button type="button" class="chip" data-f="due">{{ _("Follow-ups") }}</button>
+          {% if user.team_id %}<button type="button" class="chip" data-f="mine">{{ _("Assigned to me") }}</button>{% endif %}
+          <button type="button" class="chip on" data-f="apply">{{ _("Apply") }}</button>
+          <button type="button" class="chip" data-f="reply">{{ _("Reply") }}</button>
+          <button type="button" class="chip" data-f="maybe">{{ _("Maybe") }}</button>
+          <button type="button" class="chip" data-f="skip">{{ _("Skip") }}</button>
+          <button type="button" class="chip" data-f="reddit">{{ _("Reddit only") }}</button>
+          <button type="button" class="chip" data-f="jobs">{{ _("Jobs only") }}</button>
+          <span class="spacer"></span>
+          <select id="sort" class="sort" aria-label="{{ _('Sort leads') }}"><option value="new" selected>{{ _("Newest first") }}</option><option value="score">{{ _("Top score first") }}</option></select>
+          <span class="result" id="result"></span>
+        </div>
+        <div class="table-wrap"><table><thead><tr><th>{{ _("Lead") }}</th><th>{{ _("Score") }}</th><th>{{ _("Source") }}</th><th>{{ _("Competition") }}</th><th>{{ _("Verdict") }}</th></tr></thead><tbody id="tbody"></tbody></table></div>
+        <div class="foot-row"><span id="showing"></span><span class="auto"><span class="dot idle" id="foot-dot"></span><span id="foot-text"></span></span></div>
+      </div>
+
+      <div class="screen" id="s-pipeline">
+        <div class="titlerow"><div class="grow"><h1>{{ _("Pipeline") }}</h1><p class="sub">{{ _("Drag a lead to the next stage as the deal moves. Add a deal value in the lead panel to track earnings.") }}</p></div></div>
+        <div class="grid three" id="pipe-cards" style="grid-template-columns:repeat(4,1fr)"></div>
+        <div class="board" id="board"></div>
+      </div>
+
+      <div class="screen" id="s-sources">
+        <div class="titlerow"><div class="grow"><h1>{{ _("Sources") }}</h1><p class="sub">{{ _("Where Foxlead looks for you, and what it looks for.") }}</p></div>
+          <a class="editlink" href="{{ url_for('profile') }}">{{ _("Edit in profile →") }}</a></div>
+        <div class="pad">
+          <div class="srcgrid" id="srcgrid"></div>
+          <div class="card" style="margin-top:16px;">
+            <div class="card-head"><h3>{{ _("Keywords") }}</h3></div>
+            <p class="body">{{ _("Only posts that mention one of these — or one of your skills — are sent to the AI.") }}</p>
+            <div class="kwrow" id="keywords"></div>
+          </div>
+          <div class="card" style="margin-top:13px;">
+            <div class="card-head"><h3>{{ _("How your leads are picked") }}</h3></div>
+            <p class="body" id="rules"></p>
+          </div>
+        </div>
+      </div>
+
+      <div class="screen" id="s-replies">
+        <div class="titlerow"><div class="grow"><h1>{{ _("Replies") }}</h1><p class="sub">{{ _("Leads you've replied to or applied for — track what's in motion.") }}</p></div></div>
+        <div class="table-wrap" style="padding-top:14px;"><table><thead><tr><th>{{ _("Lead") }}</th><th>{{ _("Marked") }}</th><th>{{ _("Source") }}</th><th>{{ _("Status") }}</th></tr></thead><tbody id="replies-body"></tbody></table></div>
+      </div>
+
+      <div class="screen" id="s-won">
+        <div class="titlerow"><div class="grow"><h1>{{ _("Won") }}</h1><p class="sub">{{ _("Leads that turned into real clients.") }}</p></div></div>
+        <div class="grid three" id="won-cards"></div>
+        <div class="table-wrap" style="padding-top:14px;"><table><thead><tr><th>{{ _("Client") }}</th><th>{{ _("Won") }}</th><th>{{ _("Source") }}</th><th>{{ _("Status") }}</th></tr></thead><tbody id="won-body"></tbody></table></div>
+      </div>
+
+      <div class="screen" id="s-reports">
+        <div class="titlerow"><div class="grow"><h1>{{ _("Reports") }}</h1><p class="sub">{{ _("How Foxlead is performing for you over time.") }}</p></div>
+          <span class="live">{{ _("Last 30 days") }}</span></div>
+        <div class="pad">
+          <div class="card">
+            <div class="card-head"><h3>{{ _("Leads & replies · last 30 days") }}</h3><span class="trend" id="rep-trend"></span></div>
+            <div class="chart-box" id="rep-chart"></div>
+            <div class="xaxis" id="rep-axis"></div>
+            <div class="legend"><span><i style="background:#3d82f6"></i>{{ _("Leads found") }}</span><span><i style="background:#35c08a"></i>{{ _("Replied, applied or won") }}</span></div>
+          </div>
+          <div class="grid three" style="padding:16px 0 0;" id="rep-cards"></div>
+          <div class="card" style="margin-top:13px;">
+            <div class="card-head"><h3>{{ _("Recent scans") }}</h3></div>
+            <div class="table-wrap"><table><thead><tr><th>{{ _("When") }}</th><th>{{ _("Result") }}</th><th>{{ _("Fetched") }}</th><th>{{ _("New") }}</th><th>{{ _("Scored") }}</th><th>{{ _("Leads") }}</th></tr></thead><tbody id="runs-body"></tbody></table></div>
+          </div>
+        </div>
+      </div>
+    </div>
+  </div>
+</div>
+
+<div class="scrim" id="scrim"></div>
+<aside class="panel" id="panel" role="dialog" aria-modal="true" aria-labelledby="p-title">
+  <div class="panel-head">
+    <div class="row">
+      <span class="avatar" id="p-ava"></span>
+      <span class="pill" id="p-verdict"></span>
+      <button type="button" class="panel-close" id="p-close" aria-label="{{ _('Close') }}"><svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2.2" stroke-linecap="round" stroke-linejoin="round"><path d="M18 6L6 18M6 6l12 12"/></svg></button>
+    </div>
+    <h2 id="p-title" dir="auto"></h2>
+    <div class="panel-meta" id="p-meta"></div>
+  </div>
+  <div class="panel-body" id="p-body"></div>
+  <div class="panel-foot">
+    <button type="button" class="pbtn" id="p-mark"><svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><path d="M20 6L9 17l-5-5"/></svg><span></span></button>
+    <a class="pbtn primary" id="p-open" target="_blank" rel="noopener noreferrer"><svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><path d="M5 12h14M13 6l6 6-6 6"/></svg><span></span></a>
+  </div>
+</aside>
+
+<button type="button" class="chat-fab" id="chat-fab" aria-label="{{ _('Ask Foxlead') }}" aria-expanded="false">
+  <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><path d="M21 12a8 8 0 0 1-11.7 7.1L4 20l1-4.6A8 8 0 1 1 21 12z"/></svg>
+  <span>{{ _("Ask Foxlead") }}</span>
+</button>
+<section class="chat" id="chat" hidden aria-label="{{ _('Ask Foxlead chat') }}">
+  <div class="chat-head">
+    {% include "_logo.html" %}
+    <div class="grow"><b>{{ _("Ask Foxlead") }}</b><span id="chat-limit">{{ _("Your lead assistant") }}</span></div>
+    <button type="button" class="chat-x" id="chat-clear" title="{{ _('Clear chat') }}">{{ _("Clear") }}</button>
+    <button type="button" class="chat-x" id="chat-close" aria-label="{{ _('Close chat') }}">✕</button>
+  </div>
+  <div class="chat-log" id="chat-log" aria-live="polite"></div>
+  <div class="chat-suggest" id="chat-suggest">
+    <button type="button">{{ _("Which lead should I reply to first?") }}</button>
+    <button type="button">{{ _("Write a proposal for my best lead") }}</button>
+    <button type="button">{{ _("How can I get better leads?") }}</button>
+    <button type="button">{{ _("Give me today's summary in Urdu") }}</button>
+  </div>
+  <form class="chat-form" id="chat-form">
+    <textarea id="chat-input" rows="1" placeholder="{{ _('Ask about your leads…') }}" aria-label="{{ _('Message') }}" dir="auto" maxlength="2000"></textarea>
+    <button type="submit" class="sbtn primary" id="chat-send">{{ _("Send") }}</button>
+  </form>
+</section>
+
+<script type="application/json" id="i18n">{{ js_strings|tojson }}</script>
+<script src="{{ url_for('static', filename='dashboard.js') }}"></script>
+<script src="{{ url_for('static', filename='chat.js') }}"></script>
+</body>
+</html>

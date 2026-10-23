@@ -1,0 +1,20 @@
+<!doctype html>
+<html lang="{{ lang }}" dir="{{ text_dir }}" translate="no">
+<head>
+<meta charset="utf-8">
+<meta name="viewport" content="width=device-width, initial-scale=1">
+<meta name="theme-color" content="#0e1219">
+<title>Offline · Foxlead</title>
+<link rel="stylesheet" href="/static/foxlead.css">
+</head>
+<body>
+<main class="auth">
+  <div class="auth-card" style="text-align:center">
+    <div class="brand">{% include "_logo.html" %}<div class="brand-name">Fox<span>lead</span></div></div>
+    <h1>You're offline</h1>
+    <p class="sub">Foxlead needs the internet to show your leads. Check your connection and try again.</p>
+    <button class="btn primary" type="button" onclick="location.reload()">Try again</button>
+  </div>
+</main>
+</body>
+</html>
