@@ -112,6 +112,17 @@ CREATE TABLE IF NOT EXISTS team_invites (
     accepted_at TEXT
 );
 
+-- email ke 6 digit codes (account verify / password reset) - code hash mein, seedha nahi
+CREATE TABLE IF NOT EXISTS email_codes (
+    user_id    INTEGER NOT NULL REFERENCES users(id) ON DELETE CASCADE,
+    purpose    TEXT NOT NULL,          -- verify / reset
+    code_hash  TEXT NOT NULL,
+    expires_at TEXT NOT NULL,
+    attempts   INTEGER NOT NULL DEFAULT 0,
+    sent_at    TEXT NOT NULL,
+    PRIMARY KEY (user_id, purpose)
+);
+
 -- chhoti settings/yaaddasht (jaise: Remote OK aakhri baar kab fetch hua)
 CREATE TABLE IF NOT EXISTS meta (
     key   TEXT PRIMARY KEY,

@@ -1,0 +1,35 @@
+<!doctype html>
+<html lang="{{ lang }}" dir="{{ text_dir }}" translate="no">
+<head>
+<meta charset="utf-8">
+<meta name="viewport" content="width=device-width, initial-scale=1">
+<title>{{ _("Confirm your email · Foxlead") }}</title>
+<link rel="stylesheet" href="{{ url_for('static', filename='foxlead.css') }}">
+{% include "_pwa.html" %}
+{% include "_lang_head.html" %}
+</head>
+<body>
+<main class="auth">
+  <div class="auth-card">
+    <div class="auth-top">{% include "_lang_switch.html" %}</div>
+    <div class="brand">{% include "_logo.html" %}<div class="brand-name">Fox<span>lead</span></div></div>
+    <h1>{{ _("Check your email") }}</h1>
+    <p class="sub">{{ _("We sent a 6-digit code to {email}. Enter it here to confirm your email.", email=user.email) }}</p>
+    {% include "_flash.html" %}
+    <form method="post" novalidate>
+      <input type="hidden" name="csrf_token" value="{{ csrf_token() }}">
+      <div class="field">
+        <label for="code">{{ _("6-digit code") }}</label>
+        <input class="input code-input" id="code" name="code" inputmode="numeric" autocomplete="one-time-code" pattern="[0-9 ]*" maxlength="7" dir="ltr" required autofocus placeholder="123456">
+      </div>
+      <button class="btn primary" type="submit">{{ _("Verify email") }}</button>
+    </form>
+    <form method="post" action="{{ url_for('verify_code_resend') }}" class="code-links">
+      <input type="hidden" name="csrf_token" value="{{ csrf_token() }}">
+      <span>{{ _("No email? Check Spam, or") }}</span> <button type="submit" class="linkbtn">{{ _("send a new code") }}</button>
+    </form>
+    <p class="foot"><a href="{{ later }}">{{ _("I'll do this later →") }}</a></p>
+  </div>
+</main>
+</body>
+</html>

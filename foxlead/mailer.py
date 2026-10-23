@@ -129,6 +129,34 @@ def send_scan_summary(user, checked, best, threshold):
          f"Scan finished - no new leads.\n\n{line.replace('&mdash;', '-')}\n\nDashboard: {config.APP_URL}/dashboard")
 
 
+def code_box(code):
+    return (f'<div style="text-align:center;margin:18px 0 8px;"><span style="display:inline-block;font-family:Consolas,Menlo,monospace;'
+            f'font-size:34px;font-weight:700;letter-spacing:10px;color:{INK};background:#f1f5fb;border:1px solid {LINE};'
+            f'border-radius:12px;padding:12px 22px 12px 32px;">{esc(code)}</span></div>')
+
+
+def send_verify_code(email, name, code):
+    body = (f'<p style="font-size:15px;color:{INK};line-height:1.6;margin:4px 2px;">Hi {esc(name) or "there"},</p>'
+            f'<p style="font-size:15px;color:{SOFT};line-height:1.6;margin:10px 2px;">Enter this code in Foxlead to confirm your email. '
+            f'It works for 30 minutes.</p>' + code_box(code) +
+            f'<p style="font-size:13px;color:{FAINT};line-height:1.6;margin:12px 2px;text-align:center;">If you didn\'t sign up, you can ignore this email.</p>')
+    send(email, f"{code} is your Foxlead code",
+         layout("Confirm your email", "Your 6-digit code", body),
+         f"Hi {name or 'there'},\n\nYour Foxlead code is: {code}\n\nEnter it in Foxlead to confirm your email. It works for 30 minutes.\n\n"
+         "If you didn't sign up, you can ignore this email.")
+
+
+def send_reset_code(email, name, code):
+    body = (f'<p style="font-size:15px;color:{INK};line-height:1.6;margin:4px 2px;">Hi {esc(name) or "there"},</p>'
+            f'<p style="font-size:15px;color:{SOFT};line-height:1.6;margin:10px 2px;">Someone asked to reset the password for your Foxlead '
+            f'account. Enter this code to choose a new password. It works for 15 minutes.</p>' + code_box(code) +
+            f'<p style="font-size:13px;color:{FAINT};line-height:1.6;margin:12px 2px;text-align:center;">If it wasn\'t you, ignore this email — your password stays the same.</p>')
+    send(email, f"{code} is your Foxlead password reset code",
+         layout("Reset your password", "Your 6-digit code", body),
+         f"Hi {name or 'there'},\n\nYour Foxlead password reset code is: {code}\n\nIt works for 15 minutes. "
+         "If you didn't ask for this, ignore this email.")
+
+
 def send_verify(email, name, url):
     body = (f'<p style="font-size:15px;color:{INK};line-height:1.6;margin:4px 2px;">Hi {esc(name) or "there"},</p>'
             f'<p style="font-size:15px;color:{SOFT};line-height:1.6;margin:10px 2px;">Please confirm this is your email so '

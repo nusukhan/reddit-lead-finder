@@ -1,0 +1,43 @@
+<!doctype html>
+<html lang="{{ lang }}" dir="{{ text_dir }}" translate="no">
+<head>
+<meta charset="utf-8">
+<meta name="viewport" content="width=device-width, initial-scale=1">
+<title>{{ _("New password · Foxlead") }}</title>
+<link rel="stylesheet" href="{{ url_for('static', filename='foxlead.css') }}">
+{% include "_pwa.html" %}
+{% include "_lang_head.html" %}
+</head>
+<body>
+<main class="auth">
+  <div class="auth-card">
+    <div class="auth-top">{% include "_lang_switch.html" %}</div>
+    <div class="brand">{% include "_logo.html" %}<div class="brand-name">Fox<span>lead</span></div></div>
+    <h1>{{ _("Enter your code") }}</h1>
+    <p class="sub">{{ _("If {email} has a Foxlead account, we emailed it a 6-digit code. Enter it with your new password.", email=email) }}</p>
+    {% include "_flash.html" %}
+    <form method="post" novalidate>
+      <input type="hidden" name="csrf_token" value="{{ csrf_token() }}">
+      <div class="field">
+        <label for="code">{{ _("6-digit code") }}</label>
+        <input class="input code-input" id="code" name="code" inputmode="numeric" autocomplete="one-time-code" pattern="[0-9 ]*" maxlength="7" dir="ltr" required autofocus placeholder="123456">
+      </div>
+      <div class="field">
+        <label for="password">{{ _("New password") }}</label>
+        <input class="input" id="password" name="password" type="password" autocomplete="new-password" minlength="8" dir="ltr" required>
+      </div>
+      <div class="field">
+        <label for="password2">{{ _("Confirm new password") }}</label>
+        <input class="input" id="password2" name="password2" type="password" autocomplete="new-password" minlength="8" dir="ltr" required>
+      </div>
+      <button class="btn primary" type="submit">{{ _("Save new password") }}</button>
+    </form>
+    <form method="post" action="{{ url_for('reset_code_resend') }}" class="code-links">
+      <input type="hidden" name="csrf_token" value="{{ csrf_token() }}">
+      <span>{{ _("No email? Check Spam, or") }}</span> <button type="submit" class="linkbtn">{{ _("send a new code") }}</button>
+    </form>
+    <p class="foot"><a href="{{ url_for('forgot') }}">{{ _("← Use a different email") }}</a></p>
+  </div>
+</main>
+</body>
+</html>

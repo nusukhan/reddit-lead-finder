@@ -20,7 +20,7 @@ from flask import (Flask, abort, flash, g, jsonify, make_response, redirect, ren
 from itsdangerous import BadSignature, URLSafeTimedSerializer
 from werkzeug.security import check_password_hash, generate_password_hash
 
-from . import chat, config, db, drafts, i18n, llm, mailer, notify, plans, schedule
+from . import chat, codes, config, db, drafts, i18n, llm, mailer, notify, plans, schedule
 from .i18n import t
 from .professions import BY_ID, FEEDS, PROFESSIONS
 
@@ -247,13 +247,13 @@ def read_token(kind, token, max_age):
 
 
 def send_verification(user):
-    """Verify link email karo. Email set na ho to chupchaap chhod do (False)."""
+    """6 digit verify code email karo. Email set na ho to chupchaap chhod do (False)."""
     if not mailer.configured():
         return False
-    url = url_for("verify_email", token=make_token("verify", user), _external=True)
     try:
-        mailer.send_verify(user["email"], user["name"], url)
-    except mailer.MailError:
+        mailer.send_verify_code(user["email"], user["name"], codes.new_code(user["id"], "verify"))
+    except mailer.MailError as e:
+        app.logger.warning("verify code email to user %s failed: %s", user["id"], e)
         return False
     with db.connect() as conn:
         conn.execute("UPDATE users SET verify_sent_at = ? WHERE id = ?", (db.now_utc(), user["id"]))
@@ -352,7 +352,9 @@ def signup():
                 start_session(new_id)
                 with db.connect() as conn:
                     new_user = conn.execute("SELECT * FROM users WHERE id = ?", (new_id,)).fetchone()
-                send_verification(new_user)     # email set na ho to bhi signup chalta rahe
+                if send_verification(new_user):     # email set na ho to bhi signup chalta rahe
+                    flash(t("Account created! We emailed a 6-digit code to {email} — enter it below.", email=new_user["email"]), "success")
+                    return redirect(url_for("verify_code"))
                 flash(t("Account created! Now choose your field so Foxlead knows what to look for."), "success")
                 return redirect(url_for("profile"))
     return render_template("signup.html", form=form, google=oauth is not None)
@@ -406,13 +408,62 @@ def verify_email(token):
     return redirect(url_for("dashboard") if current_user() else url_for("login"))
 
 
+def after_verify(user):
+    with db.connect() as conn:
+        has_profile = db.get_profile(conn, user["id"]) is not None
+    return redirect(url_for("dashboard") if has_profile else url_for("profile"))
+
+
+CODE_ERRORS = {
+    "expired": "That code has expired — send yourself a new one.",
+    "locked": "Too many wrong tries — send yourself a new code.",
+}
+
+
+@app.route("/verify-code", methods=["GET", "POST"])
+@login_required
+def verify_code(user):
+    """Account banane ke baad: email par aaya 6 digit code yahan."""
+    if user["email_verified"]:
+        return after_verify(user)
+    if request.method == "POST":
+        result = codes.check(user["id"], "verify", request.form.get("code", ""))
+        if result == "ok":
+            with db.connect() as conn:
+                conn.execute("UPDATE users SET email_verified = 1 WHERE id = ?", (user["id"],))
+            flash(t("Your email is verified. Lead alerts will now reach your inbox."), "success")
+            return after_verify(user)
+        if result == "wrong":
+            flash(t("That code is wrong — {n} tries left.", n=codes.tries_left(user["id"], "verify")))
+        else:
+            flash(t(CODE_ERRORS[result]))
+    with db.connect() as conn:
+        has_profile = db.get_profile(conn, user["id"]) is not None
+    return render_template("verify_code.html", user=user, later=url_for("dashboard") if has_profile else url_for("profile"))
+
+
+@app.route("/verify-code/resend", methods=["POST"])
+@login_required
+def verify_code_resend(user):
+    if user["email_verified"]:
+        return after_verify(user)
+    wait = codes.wait_seconds(user["id"], "verify")
+    if wait:
+        flash(t("Please wait {n} seconds before asking for a new code.", n=wait), "info")
+    elif send_verification(user):
+        flash(t("New code sent to {email}.", email=user["email"]), "success")
+    else:
+        flash(t("Couldn't send the email right now. Please try again later."))
+    return redirect(url_for("verify_code"))
+
+
 @app.route("/verify/resend", methods=["POST"])
 @login_required
 def verify_resend(user):
     if user["email_verified"]:
         return jsonify(ok=True, verified=True)
-    if user["verify_sent_at"] and user["verify_sent_at"] > iso_ago(minutes=2):
-        return jsonify(error=t("We just sent one — please wait a couple of minutes.")), 429
+    if codes.wait_seconds(user["id"], "verify"):
+        return jsonify(error=t("We just sent one — please wait a minute.")), 429
     if not send_verification(user):
         return jsonify(error=t("Couldn't send the email right now. Please try again later.")), 502
     return jsonify(ok=True)
@@ -426,8 +477,12 @@ def forgot():
     if request.method == "POST":
         email = request.form.get("email", "").strip().lower()
         # hamesha ek hi jawab - taake koi ye na jaan sake ke kaunsi email registered hai
-        flash(t("If an account exists for that email, we've sent a link to reset the password. It works for 1 hour."), "success")
-        recent = time.time() - _reset_sent.get(email, 0) < 120
+        if not EMAIL_RE.match(email):
+            flash(t("Please enter a valid email address."))
+            return redirect(url_for("forgot"))
+        session["reset_email"] = email
+        flash(t("If an account exists for {email}, we've emailed it a 6-digit code. It works for 15 minutes.", email=email), "success")
+        recent = time.time() - _reset_sent.get(email, 0) < codes.RESEND_SECONDS
         with db.connect() as conn:
             user = conn.execute("SELECT * FROM users WHERE email = ?", (email,)).fetchone()
         # user ko hamesha ek jawab - lekin server log mein asal nateeja (email nahi aayi to wajah yahin milti hai)
@@ -436,18 +491,17 @@ def forgot():
         elif user["disabled"]:
             app.logger.warning("password reset: user %s is disabled - no email", user["id"])
         elif recent:
-            app.logger.warning("password reset: user %s asked again within 2 minutes - first email still on its way", user["id"])
+            app.logger.warning("password reset: user %s asked again within a minute - first email still on its way", user["id"])
         elif not mailer.configured():
             app.logger.warning("password reset: email is not set up (GMAIL_ADDRESS / GMAIL_APP_PASSWORD)")
         else:
             _reset_sent[email] = time.time()
-            url = url_for("reset_password", token=make_token("reset", user), _external=True)
             try:
-                mailer.send_reset(user["email"], user["name"], url)
-                app.logger.warning("password reset: email sent to user %s (link %s/reset/...)", user["id"], request.host_url.rstrip("/"))
+                mailer.send_reset_code(user["email"], user["name"], codes.new_code(user["id"], "reset"))
+                app.logger.warning("password reset: code emailed to user %s", user["id"])
             except mailer.MailError as e:
                 app.logger.warning("password reset: email to user %s failed: %s", user["id"], e)
-        return redirect(url_for("forgot"))
+        return redirect(url_for("reset_code"))
     return render_template("forgot.html")
 
 
@@ -472,6 +526,60 @@ def reset_password(token):
             flash(t("Password changed — you're logged in."), "success")
             return redirect(url_for("dashboard"))
     return render_template("reset.html", token=token)
+
+
+@app.route("/reset-code", methods=["GET", "POST"])
+def reset_code():
+    """Password bhool gaye: email par aaya code + naya password yahan."""
+    email = session.get("reset_email")
+    if not email:
+        return redirect(url_for("forgot"))
+    if request.method == "POST":
+        pw, pw2 = request.form.get("password", ""), request.form.get("password2", "")
+        if len(pw) < 8:                        # pehle password check - galat password par code ki koshish zaya na ho
+            flash(t("Password must be at least 8 characters."))
+        elif pw != pw2:
+            flash(t("The two passwords don't match."))
+        else:
+            with db.connect() as conn:
+                user = conn.execute("SELECT * FROM users WHERE email = ?", (email,)).fetchone()
+            # account na ho to bhi wahi "galat code" - koi pata na laga sake kaunsi email registered hai
+            result = codes.check(user["id"], "reset", request.form.get("code", "")) if user and not user["disabled"] else "expired"
+            if result == "ok":
+                with db.connect() as conn:     # code email par aaya - matlab email bhi verified
+                    conn.execute("UPDATE users SET password_hash = ?, email_verified = 1 WHERE id = ?",
+                                 (generate_password_hash(pw), user["id"]))
+                _failed.pop(email, None)
+                session.pop("reset_email", None)
+                start_session(user["id"])
+                flash(t("Password changed — you're logged in."), "success")
+                return redirect(url_for("dashboard"))
+            if result == "wrong":
+                flash(t("That code is wrong — {n} tries left.", n=codes.tries_left(user["id"], "reset")))
+            else:
+                flash(t(CODE_ERRORS[result]))
+    return render_template("reset_code.html", email=email)
+
+
+@app.route("/reset-code/resend", methods=["POST"])
+def reset_code_resend():
+    email = session.get("reset_email")
+    if not email:
+        return redirect(url_for("forgot"))
+    with db.connect() as conn:
+        user = conn.execute("SELECT * FROM users WHERE email = ?", (email,)).fetchone()
+    wait = codes.wait_seconds(user["id"], "reset") if user else 0
+    if wait:
+        flash(t("Please wait {n} seconds before asking for a new code.", n=wait), "info")
+    else:
+        if user and not user["disabled"] and mailer.configured():
+            try:
+                mailer.send_reset_code(user["email"], user["name"], codes.new_code(user["id"], "reset"))
+                app.logger.warning("password reset: new code emailed to user %s", user["id"])
+            except mailer.MailError as e:
+                app.logger.warning("password reset: email to user %s failed: %s", user["id"], e)
+        flash(t("If an account exists for {email}, we've emailed it a 6-digit code. It works for 15 minutes.", email=email), "success")
+    return redirect(url_for("reset_code"))
 
 
 @app.route("/login/google")

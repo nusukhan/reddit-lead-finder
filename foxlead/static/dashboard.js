@@ -728,12 +728,6 @@ $("scan").addEventListener("click", async () => {
   try { await api("/api/scan", {}); scanning = true; renderAll(); toast(t("Scan started — this takes a few minutes."), null, null, "ok"); setTimeout(() => load().catch(e => toast(e.message, null, null, "err")), 8000); }
   catch (e) { toast(e.message, null, null, "err"); }
 });
-const resend = $("verify-resend");
-if (resend) resend.addEventListener("click", async () => {
-  resend.disabled = true;
-  try { await api("/verify/resend", {}); resend.textContent = t("Sent ✓ — check your inbox"); resend.classList.add("ok"); }
-  catch (e) { resend.disabled = false; toast(e.message, null, null, "err"); }
-});
 const meBtn = $("me-btn"), meMenu = $("me-menu");
 meBtn.addEventListener("click", () => { meMenu.hidden = !meMenu.hidden; meBtn.setAttribute("aria-expanded", String(!meMenu.hidden)); });
 document.addEventListener("click", e => { if (!e.target.closest(".me")) { meMenu.hidden = true; meBtn.setAttribute("aria-expanded", "false"); } });

@@ -56,6 +56,10 @@ a { color: var(--accent-2); }
          margin-bottom: 14px; border: 1px solid; line-height: 1.45; overflow-wrap: anywhere; }
 .flash::before { flex: none; width: 18px; height: 18px; border-radius: 50%; display: inline-flex; align-items: center;
                  justify-content: center; font-size: 0.7rem; font-weight: 800; color: #0b0e15; margin-top: 1px; }
+/* 6 digit code wala khaana: bada, beech mein, digits ke beech jagah */
+.code-input { font-family: var(--mono); font-size: 1.5rem; letter-spacing: 0.4em; text-align: center; }
+.code-links { margin: 14px 0 0; font-size: 0.84rem; color: var(--soft); text-align: center; }
+.code-links .linkbtn { background: none; border: 0; padding: 0; width: auto; height: auto; box-shadow: none; color: var(--accent-2); font: inherit; font-weight: 600; text-decoration: underline; cursor: pointer; }
 .flash.err  { background: var(--skip-bg);  color: #f6c2bd; border-color: #6a2d28; }
 .flash.err::before  { content: "✕"; background: var(--skip); }
 .flash.ok   { background: var(--apply-bg); color: #9debc8; border-color: var(--apply-dim); }
