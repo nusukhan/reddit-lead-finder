@@ -46,6 +46,7 @@
     send: [[660, 0.07]],
     reply: [[880, 0.12], [1320, 0.2]],
     greet: [[784, 0.12], [988, 0.12], [1175, 0.22]],
+    welcome: [[523, 0.1], [659, 0.1], [784, 0.2]],
     error: [[330, 0.14], [247, 0.22]],
   };
   function showToggles() {
@@ -233,7 +234,9 @@
     if (!greet.hidden && greet.dataset.key) store.set(greet.dataset.key, "1");
     greet.hidden = true;
   }
+  let firstData = true;
   window.chatNewLeads = (n, runTime) => {
+    const first = firstData; firstData = false;
     badge.hidden = !n;
     badge.textContent = n > 9 ? "9+" : String(n);
     if (n && box.hidden) fab.classList.add("attn");
@@ -245,6 +248,7 @@
       if (greet.hidden) play(SOUND.greet);       // browser pehli click se pehle awaaz rok sakta hai - tab chup
       greet.hidden = false;
     } else if (!n) greet.hidden = true;
+    if (first && greet.hidden) play(SOUND.welcome);   // dashboard khulte hi chatbot ki dhun (salaam wali chime na baji ho to)
   };
   $c("chat-greet-go").addEventListener("click", () => { hideGreet(); setLead(null); open(true); ask(t("Which of my new leads should I look at first?")); });
   $c("chat-greet-x").addEventListener("click", hideGreet);
@@ -293,4 +297,14 @@
   document.addEventListener("keydown", e => { if (e.key === "Escape" && !box.hidden) open(false); });
   renderSuggest();
   showToggles();
+
+  // Browser pehli click/tap tak awaaz rok kar rakhta hai - us pehli click par rukki hui dhun baj jaye
+  const unlock = () => { if (audio && audio.state === "suspended") audio.resume(); };
+  document.addEventListener("pointerdown", unlock, { once: true });
+  document.addEventListener("keydown", unlock, { once: true });
+  // nayi leads hain aur chat abhi tak nahi khola: har 3 minute baad yaad dilao (zyada se zyada 3 baar)
+  let reminders = 0;
+  setInterval(() => {
+    if (reminders < 3 && box.hidden && !badge.hidden) { reminders++; play(SOUND.greet); }
+  }, 3 * 60 * 1000);
 })();
