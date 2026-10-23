@@ -142,7 +142,7 @@ NEW_COLUMNS = {
         "blocklist": "TEXT NOT NULL DEFAULT '[]'",      # ye words wale posts kabhi mat dikhao
         "weekly_report": "INTEGER NOT NULL DEFAULT 1",  # har Monday summary email
         "telegram_alerts": "TEXT NOT NULL DEFAULT 'all'",  # all / hot / off
-        "max_age_days": "INTEGER NOT NULL DEFAULT 3",   # pichhle kitne din ki posts (3 ya 7)
+        "max_age_days": "INTEGER NOT NULL DEFAULT 7",   # pichhle kitne din ki posts (3 ya 7)
         "scan_every": "INTEGER",                        # auto-scan har kitne ghante (0 = band, NULL = plan ka default)
         "scan_hour": "INTEGER",                         # 24 ghante wale scan ka waqt (0-23, user ke time zone mein; NULL = koi bhi)
         "email_every_scan": "INTEGER NOT NULL DEFAULT 0",  # 1 = koi lead na mile to bhi har scan ke baad email
@@ -255,7 +255,7 @@ def save_profile(conn, user_id, p):
           int(p["remote_only"]), json.dumps(p["subreddits"]), json.dumps(p["keywords"]),
           json.dumps(p["feeds"]), int(p["threshold"]), int(p["email_enabled"]),
           p.get("portfolio", ""), json.dumps(p.get("blocklist", [])), int(p.get("weekly_report", True)),
-          p.get("telegram_alerts", "all"), int(p.get("max_age_days", 3)), p.get("scan_every"), p.get("scan_hour"),
+          p.get("telegram_alerts", "all"), int(p.get("max_age_days", 7)), p.get("scan_every"), p.get("scan_hour"),
           int(p.get("email_every_scan", False)), now_utc()))
 
 

@@ -66,9 +66,9 @@ STRIPE_PRICE_PRO = os.getenv("STRIPE_PRICE_PRO", "")
 STRIPE_WEBHOOK_SECRET = os.getenv("STRIPE_WEBHOOK_SECRET", "")
 
 # robot ki hadein (kharcha aur waqt control mein rahe)
-MAX_SCORE_PER_USER = 40     # ek run mein ek user ke liye zyada se zyada itni posts Claude ko
+MAX_SCORE_PER_USER = 150    # ek run mein ek user ke liye zyada se zyada itni posts Claude ko (8 ek saath - ~30-40 sec)
 AGE_DAYS_CHOICES = (3, 7)   # user chunta hai: pichhle kitne din ki posts check hon (nayi hamesha upar)
-AGE_DAYS_DEFAULT = 3
+AGE_DAYS_DEFAULT = 7        # user ki khwaish: kam se kam pichhle hafte ki posts dikhen
 FETCH_MAX_AGE_HOURS = max(AGE_DAYS_CHOICES) * 24   # robot itni purani tak laata hai, phir har user apni hadd lagata hai
 
 # auto-scan: user har kitne ghante chun sakta hai (0 = band). Plan ki hadd alag se (PLANS[...]["scan_every_hours"]).
