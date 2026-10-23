@@ -71,5 +71,10 @@ AGE_DAYS_CHOICES = (3, 7)   # user chunta hai: pichhle kitne din ki posts check 
 AGE_DAYS_DEFAULT = 3
 FETCH_MAX_AGE_HOURS = max(AGE_DAYS_CHOICES) * 24   # robot itni purani tak laata hai, phir har user apni hadd lagata hai
 
+# auto-scan: user har kitne ghante chun sakta hai (0 = band). Plan ki hadd alag se (PLANS[...]["scan_every_hours"]).
+SCAN_EVERY_CHOICES = (1, 3, 6, 12, 24)
+# web app ke andar hi scheduler chale (har minute dekhta hai kis ka waqt ho gaya). Tests mein 0.
+SCHEDULER = os.getenv("FOXLEAD_SCHEDULER", "1") == "1"
+
 # profile/field badalne par foran scan (tests mein FOXLEAD_AUTO_SCAN=0 - asli internet/Claude na chale)
 AUTO_SCAN_ON_PROFILE = os.getenv("FOXLEAD_AUTO_SCAN", "1") == "1"

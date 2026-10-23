@@ -16,7 +16,7 @@ from concurrent.futures import ThreadPoolExecutor
 import xml.etree.ElementTree as ET
 from datetime import datetime, timedelta, timezone
 
-from . import config, db, llm, mailer, notify, plans, scoring, sources
+from . import config, db, llm, mailer, notify, plans, schedule, scoring, sources
 from .professions import FEEDS
 
 SLOW_SOURCES_HOURS = 3      # Remote OK / Hacker News: 3 ghante mein ek baar (unki request)
@@ -166,7 +166,7 @@ def process_user(user, profile):
     if any(e and "API key" in str(e) for _, e in results):
         raise StopRun(next(str(e) for _, e in results if e and "API key" in str(e)))
 
-    new_leads, scored, failures = [], 0, 0
+    new_leads, scored, failures, best = [], 0, 0, 0
     for p, (res, err) in zip(to_score, results):
         if err:
             failures += 1
@@ -177,6 +177,7 @@ def process_user(user, profile):
             failures += 1
             continue
         scored += 1
+        best = max(best, score)
         lead = {"score": score, "reason": reason, "is_lead": int(score >= profile["threshold"]),
                 "verdict": "", "competition": "", "comment_count": 0, "note": "", "hot": 0}
         if lead["is_lead"]:
@@ -207,7 +208,7 @@ def process_user(user, profile):
         if lead["is_lead"]:
             new_leads.append({**dict(p), **lead, "source_label": source_label(p["source"])})
 
-    status = deliver(user, profile, new_leads)
+    status = deliver(user, profile, new_leads, checked=scored, best=best)
     if new_leads and user["telegram_chat_id"] and notify.configured() and plans.limits(user)["telegram"]:
         try:
             sent = notify.lead_alert(user["telegram_chat_id"], profile["telegram_alerts"], new_leads)
@@ -227,15 +228,17 @@ def source_label(source):
     return source if source.startswith("r/") else FEEDS.get(source, {}).get("label", source)
 
 
-def deliver(user, profile, new_leads):
-    """Naye leads + aaj ke follow-ups ka email. Return run status (ya None = koi email nahi)."""
+def deliver(user, profile, new_leads, checked=0, best=0):
+    """Naye leads + aaj ke follow-ups ka email. User ne "har scan ke baad" chuna ho to koi lead na mile
+    tab bhi chhota sa hisaab. Return run status (ya None = leads wali email nahi gayi)."""
     today = datetime.now(timezone.utc).date().isoformat()
     with db.connect() as conn:
         due = conn.execute("""
             SELECT p.id, p.title, p.link, up.user_note FROM user_posts up JOIN posts p ON p.id = up.post_id
             WHERE up.user_id = ? AND up.remind_at IS NOT NULL AND up.remind_at <= ? AND up.reminded_at IS NULL
               AND up.feedback = ''""", (user["id"], today)).fetchall()
-    if not profile["email_enabled"] or not (new_leads or due):
+    summary = bool(profile["email_every_scan"]) and not new_leads and not due
+    if not profile["email_enabled"] or not (new_leads or due or summary):
         return None
     if not user["email_verified"]:
         # bina tasdeeq ke kisi ke inbox mein email nahi (koi doosre ka email daal kar spam na karwa sake)
@@ -243,6 +246,13 @@ def deliver(user, profile, new_leads):
         return None
     if not mailer.configured():
         log("    (email not configured - skipping email)")
+        return None
+    if summary:
+        try:
+            mailer.send_scan_summary({"email": user["email"], "title": profile["title"]}, checked, best, profile["threshold"])
+            log(f"    emailed {user['email']}: scan summary (no new leads)")
+        except mailer.MailError as e:
+            log(f"    ! email failed: {e}")
         return None
     new_leads = sorted(new_leads, key=lambda l: ({"Apply": 0, "Reply": 1, "Maybe": 2, "Review": 3}.get(l["verdict"], 4), -l["score"]))
     try:
@@ -316,14 +326,10 @@ def run_for_users(user_ids=None, weekly=False):
         # team members ko skip - owner ka scan poori team ke liye hai
         owners = {r["id"]: r["owner_id"] for r in conn.execute("SELECT id, owner_id FROM teams")}
         users = [u for u in users if not u["team_id"] or owners.get(u["team_id"]) == u["id"]]
-        if user_ids is None:
-            # robot (har ghanta): plan ki hadd se pehle dobara scan nahi (Free = din mein ek)
-            def due(u):
-                last = conn.execute("SELECT MAX(time) FROM runs WHERE user_id = ?", (u["id"],)).fetchone()[0]
-                hours = plans.limits(u)["scan_every_hours"]
-                return not last or last <= ago_iso(hours=hours, minutes=-5)
-            users = [u for u in users if due(u)]
         profiles = {u["id"]: db.get_profile(conn, u["id"]) for u in users}
+        if user_ids is None:
+            # robot: sirf wo users jin ka auto-scan ka waqt ho gaya (unka apna chuna waqt, plan ki hadd ke andar)
+            users = [u for u in users if schedule.is_due(u, profiles[u["id"]], last_run(conn, u["id"]))]
     if not users:
         log("No users with a profile yet - nothing to do.")
         return
@@ -345,9 +351,46 @@ def run_for_users(user_ids=None, weekly=False):
             return
 
 
+def last_run(conn, user_id):
+    return conn.execute("SELECT MAX(time) FROM runs WHERE user_id = ?", (user_id,)).fetchone()[0]
+
+
+def due_user_ids():
+    """Jin users ka auto-scan ka waqt ho gaya (team members nahi - owner ka scan poori team ka)."""
+    db.init_db()
+    with db.connect() as conn:
+        users = conn.execute("""SELECT u.* FROM users u JOIN profiles p ON p.user_id = u.id
+                                WHERE u.disabled = 0 ORDER BY u.id""").fetchall()
+        owners = {r["id"]: r["owner_id"] for r in conn.execute("SELECT id, owner_id FROM teams")}
+        return [u["id"] for u in users
+                if (not u["team_id"] or owners.get(u["team_id"]) == u["id"])
+                and schedule.is_due(u, db.get_profile(conn, u["id"]), last_run(conn, u["id"]))]
+
+
+LOCK_KEY, LOCK_MINUTES = "scheduler_lock", 30
+
+
+def run_scheduled(user_ids):
+    """Auto-scan chalao - lekin agar doosra scheduler (jaise --loop wala process) abhi chal raha ho to nahi.
+    Lock 30 min mein khud khul jata hai (process beech mein band ho jaye to bhi)."""
+    now = db.now_utc()
+    with db.connect() as conn:
+        conn.execute("INSERT OR IGNORE INTO meta (key, value) VALUES (?, '')", (LOCK_KEY,))
+        got = conn.execute("UPDATE meta SET value = ? WHERE key = ? AND value < ?",
+                           (now, LOCK_KEY, ago_iso(minutes=LOCK_MINUTES))).rowcount
+    if not got:
+        return False
+    try:
+        run_for_users(user_ids)
+    finally:
+        with db.connect() as conn:
+            db.set_meta(conn, LOCK_KEY, "")
+    return True
+
+
 def main():
     ap = argparse.ArgumentParser(description="Foxlead robot - find and score leads for every user.")
-    ap.add_argument("--loop", action="store_true", help="run every hour until stopped")
+    ap.add_argument("--loop", action="store_true", help="keep running: every minute, scan the users whose auto-scan time has come")
     ap.add_argument("--user", help="only this user's email")
     ap.add_argument("--weekly", action="store_true", help="send the weekly report now (normally Mondays)")
     args = ap.parse_args()
@@ -359,14 +402,15 @@ def main():
         if row is None:
             sys.exit(f"No user with email {args.user}")
         ids = [row["id"]]
-    while True:
-        started = time.time()
+    if not args.loop:
         run_for_users(ids, weekly=args.weekly)
-        args.weekly = False                  # --loop ke saath sirf pehli baar
-        if not args.loop:
-            break
-        log("Done. Next run in an hour.")
-        time.sleep(max(60, 3600 - (time.time() - started)))
+        return
+    log("Auto-scan running: every minute it scans the users whose time has come (Ctrl+C to stop).")
+    while True:
+        due = [i for i in due_user_ids() if ids is None or i in ids]
+        if due:
+            run_scheduled(due)
+        time.sleep(60)
 
 
 if __name__ == "__main__":

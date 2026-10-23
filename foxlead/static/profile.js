@@ -17,3 +17,17 @@ form.querySelectorAll('input[name="profession"]').forEach(radio => {
     field(p.id === "custom" ? "title" : "skills").focus();
   });
 });
+
+// auto-scan: "kis baje" sirf "din mein ek baar" ke saath; browser ka time zone saath bhejo
+const every = document.getElementById("scan_every"), hourField = document.getElementById("scan-hour-field");
+const showHour = () => { hourField.hidden = every.value !== "24"; };
+every.addEventListener("change", showHour);
+showHour();
+try {
+  const tz = Intl.DateTimeFormat().resolvedOptions().timeZone;
+  if (tz) {
+    document.getElementById("timezone").value = tz;
+    const line = document.getElementById("tz-line");
+    line.textContent = line.textContent.replace(/[^:：]*$/, " " + tz);
+  }
+} catch (e) { /* purana browser - server wala time zone hi rahe */ }

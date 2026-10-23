@@ -135,6 +135,7 @@ NEW_COLUMNS = {
         "stripe_subscription_id": "TEXT",
         "team_id": "INTEGER",                           # agency team (owner ki team)
         "lang": "TEXT NOT NULL DEFAULT 'en'",           # en / ur
+        "timezone": "TEXT NOT NULL DEFAULT ''",         # browser ka time zone (jaise Asia/Karachi) - auto-scan "kis baje" ke liye
     },
     "profiles": {
         "portfolio": "TEXT NOT NULL DEFAULT ''",        # AI draft mein link ke liye
@@ -142,6 +143,9 @@ NEW_COLUMNS = {
         "weekly_report": "INTEGER NOT NULL DEFAULT 1",  # har Monday summary email
         "telegram_alerts": "TEXT NOT NULL DEFAULT 'all'",  # all / hot / off
         "max_age_days": "INTEGER NOT NULL DEFAULT 3",   # pichhle kitne din ki posts (3 ya 7)
+        "scan_every": "INTEGER",                        # auto-scan har kitne ghante (0 = band, NULL = plan ka default)
+        "scan_hour": "INTEGER",                         # 24 ghante wale scan ka waqt (0-23, user ke time zone mein; NULL = koi bhi)
+        "email_every_scan": "INTEGER NOT NULL DEFAULT 0",  # 1 = koi lead na mile to bhi har scan ke baad email
     },
     "user_posts": {
         "draft": "TEXT NOT NULL DEFAULT ''",            # AI reply / cover letter draft
@@ -235,8 +239,9 @@ def save_profile(conn, user_id, p):
     conn.execute("""
         INSERT INTO profiles (user_id, profession, title, skills, ideal_client, country, remote_only,
                               subreddits, keywords, feeds, threshold, email_enabled, portfolio, blocklist,
-                              weekly_report, telegram_alerts, max_age_days, updated_at)
-        VALUES (?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?)
+                              weekly_report, telegram_alerts, max_age_days, scan_every, scan_hour,
+                              email_every_scan, updated_at)
+        VALUES (?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?)
         ON CONFLICT(user_id) DO UPDATE SET
             profession=excluded.profession, title=excluded.title, skills=excluded.skills,
             ideal_client=excluded.ideal_client, country=excluded.country, remote_only=excluded.remote_only,
@@ -244,12 +249,14 @@ def save_profile(conn, user_id, p):
             threshold=excluded.threshold, email_enabled=excluded.email_enabled,
             portfolio=excluded.portfolio, blocklist=excluded.blocklist, weekly_report=excluded.weekly_report,
             telegram_alerts=excluded.telegram_alerts, max_age_days=excluded.max_age_days,
-            updated_at=excluded.updated_at
+            scan_every=excluded.scan_every, scan_hour=excluded.scan_hour,
+            email_every_scan=excluded.email_every_scan, updated_at=excluded.updated_at
     """, (user_id, p["profession"], p["title"], p["skills"], p["ideal_client"], p["country"],
           int(p["remote_only"]), json.dumps(p["subreddits"]), json.dumps(p["keywords"]),
           json.dumps(p["feeds"]), int(p["threshold"]), int(p["email_enabled"]),
           p.get("portfolio", ""), json.dumps(p.get("blocklist", [])), int(p.get("weekly_report", True)),
-          p.get("telegram_alerts", "all"), int(p.get("max_age_days", 3)), now_utc()))
+          p.get("telegram_alerts", "all"), int(p.get("max_age_days", 3)), p.get("scan_every"), p.get("scan_hour"),
+          int(p.get("email_every_scan", False)), now_utc()))
 
 
 def blocked(text, blocklist):

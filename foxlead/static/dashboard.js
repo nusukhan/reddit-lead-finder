@@ -107,7 +107,7 @@ function toast(msg, actionLabel, onAction, kind = "info") {
 }
 
 // ---------- state ----------
-let PROFILE = null, WINDOW = null, leads = [], runs = [], scanning = false, DRAFTS = { used: 0, limit: 30 };
+let PROFILE = null, WINDOW = null, AUTO = null, leads = [], runs = [], scanning = false, DRAFTS = { used: 0, limit: 30 };
 let ME = { id: null }, TEAM = [];   // team ke log (lead assign karne ke liye)
 const state = { screen: "leads", range: 30, chip: "apply", sort: "new", q: "", open: null };   // default: Apply leads, nayi pehle
 
@@ -125,6 +125,7 @@ async function load() {
   const d = await api("/api/data");
   PROFILE = d.profile;
   WINDOW = d.window;
+  AUTO = d.auto;
   DRAFTS = d.drafts;
   ME = d.user; TEAM = d.team || [];
   // ms = Foxlead ne kab dhoondi (date range/charts); posted = post asal mein kab hui (dikhane + sort ke liye)
@@ -219,6 +220,18 @@ function clickRow(l, cells) {
   tr.addEventListener("keydown", e => { if (e.key === "Enter") openLead(l); });
   return tr;
 }
+// user ke chune auto-scan schedule se: "~20 min mein", "aaj 09:00 baje", "kal 09:00 baje", ya band
+function nextScanText() {
+  if (!AUTO || !AUTO.every || !AUTO.next_at) return t("Auto-scan off");
+  const at = new Date(AUTO.next_at), mins = Math.round((at - Date.now()) / 60000);
+  if (mins <= 2) return t("Auto-scan starting soon");
+  if (mins < 60) return t("Next scan in ~{n} min", { n: mins });
+  const time = at.toLocaleTimeString(LOCALE, { hour: "2-digit", minute: "2-digit", hour12: false });   // 09:00 (Urdu mein "AM" na aaye)
+  const tomorrow = new Date(); tomorrow.setDate(tomorrow.getDate() + 1);
+  if (at.toDateString() === new Date().toDateString()) return t("Next scan at {time}", { time });
+  if (at.toDateString() === tomorrow.toDateString()) return t("Next scan tomorrow at {time}", { time });
+  return t("Next scan {day} at {time}", { day: fmtDay(at), time });
+}
 function emptyRow(cols, title, text, extra) {
   const box = el("div", { class: "empty" });
   box.innerHTML = EMPTY_ICON;   // sirf fixed icon - koi data nahi
@@ -311,7 +324,7 @@ function renderChrome() {
   $("bell").title = t("{todo} to act on · {due} follow-ups due", { todo, due });
   $("live-dot").className = dotCls;
   $("live-text").textContent = scanning ? t("Scanning…") : last && !ok ? t("Last scan: {s}", { s: t((RUN_STATUS[last.status] || ["", last.status])[1]) })
-    : t("Next scan in ~{n} min", { n: 60 - new Date().getMinutes() });
+    : nextScanText();
   $("foot-dot").className = dotCls;
   $("foot-text").textContent = scanning ? t("Scanning for new leads…") : last ? t(ok ? "Engine live · last scan {ago}" : "Engine needs a look · last scan {ago}", { ago: ago(last.ms) }) : t("No scans yet");
   const scanBtn = $("scan");

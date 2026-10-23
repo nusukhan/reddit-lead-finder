@@ -99,7 +99,7 @@
       </div>
     </div>
 
-    <p class="step">{{ _("Step 4 · Alerts") }}</p>
+    <p class="step">{{ _("Step 4 · Auto-scan & alerts") }}</p>
     <div class="form-card">
       <div class="two">
         <div class="field">
@@ -110,19 +110,49 @@
             {% endfor %}
           </select>
         </div>
-        <div class="field" style="align-self:end">
-          <label class="toggle-row"><input type="checkbox" name="email_enabled" value="1" {% if not profile or profile.email_enabled %}checked{% endif %}>
-            {{ _("Email me new leads at {email}", email=user.email) }}</label>
+        <div class="field">
+          <label for="max_age_days">{{ _("Check posts from the last") }}</label>
+          <select class="select" id="max_age_days" name="max_age_days">
+            {% for d in age_choices %}
+            <option value="{{ d }}" {% if (profile.max_age_days if profile and profile.max_age_days else age_default) == d %}selected{% endif %}>{{ _("{n} days", n=d) }}</option>
+            {% endfor %}
+          </select>
         </div>
       </div>
+      <p class="hint" style="margin-top:-6px">{{ _("The newest posts always show on top. 7 days finds more leads; 3 days keeps only the freshest.") }}</p>
+      <div class="two">
+        <div class="field">
+          <label for="scan_every">{{ _("Scan automatically") }}</label>
+          <select class="select" id="scan_every" name="scan_every">
+            {% for h in scan_choices %}
+            <option value="{{ h }}" {% if scan_every == h %}selected{% endif %} {% if h < scan_floor %}disabled{% endif %}>
+              {{ _("Every hour") if h == 1 else (_("Once a day") if h == 24 else _("Every {n} hours", n=h)) }}{% if h < scan_floor %} · Pro{% endif %}</option>
+            {% endfor %}
+            <option value="0" {% if scan_every == 0 %}selected{% endif %}>{{ _("Off — only when I press Scan now") }}</option>
+          </select>
+        </div>
+        <div class="field" id="scan-hour-field">
+          <label for="scan_hour">{{ _("At (your time)") }}</label>
+          <select class="select" id="scan_hour" name="scan_hour" dir="ltr">
+            <option value="">{{ _("Any time") }}</option>
+            {% for h in range(24) %}
+            <option value="{{ h }}" {% if profile and profile.scan_hour == h %}selected{% endif %}>{{ "%02d:00" % h }}</option>
+            {% endfor %}
+          </select>
+        </div>
+      </div>
+      <p class="hint" style="margin-top:-6px">{{ _("Foxlead scans by itself on this schedule — you don't need to keep anything open.") }}
+        {% if scan_floor > 1 %}{{ _("The Free plan scans once a day; Pro can scan every hour.") }}{% endif %}
+        <span id="tz-line">{{ _("Your time zone: {tz}", tz=user.timezone or "UTC") }}</span></p>
+      <input type="hidden" name="timezone" id="timezone" value="{{ user.timezone }}">
       <div class="field">
-        <label for="max_age_days">{{ _("Check posts from the last") }}</label>
-        <select class="select" id="max_age_days" name="max_age_days">
-          {% for d in age_choices %}
-          <option value="{{ d }}" {% if (profile.max_age_days if profile and profile.max_age_days else age_default) == d %}selected{% endif %}>{{ _("{n} days", n=d) }}</option>
-          {% endfor %}
+        <label for="email_mode">{{ _("Email me at {email}", email=user.email) }}</label>
+        <select class="select" id="email_mode" name="email_mode">
+          {% set mode = 'off' if profile and not profile.email_enabled else ('every' if profile and profile.email_every_scan else 'leads') %}
+          <option value="leads" {% if mode == 'leads' %}selected{% endif %}>{{ _("When new leads are found") }}</option>
+          <option value="every" {% if mode == 'every' %}selected{% endif %}>{{ _("After every scan (even when nothing is found)") }}</option>
+          <option value="off" {% if mode == 'off' %}selected{% endif %}>{{ _("Never") }}</option>
         </select>
-        <p class="hint">{{ _("The newest posts always show on top. 7 days finds more leads; 3 days keeps only the freshest.") }}</p>
       </div>
       <div class="field">
         <label class="toggle-row"><input type="checkbox" name="weekly_report" value="1" {% if not profile or profile.weekly_report %}checked{% endif %}>

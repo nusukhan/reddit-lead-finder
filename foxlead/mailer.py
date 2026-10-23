@@ -114,6 +114,21 @@ def send_digest(user, leads, followups):
     send(user["email"], subject, body, "Your Foxlead update\n\n" + "\n\n".join(text) + f"\n\nDashboard: {config.APP_URL}/dashboard")
 
 
+def send_scan_summary(user, checked, best, threshold):
+    """User ne "har scan ke baad email" chuna ho aur is scan mein koi lead na mile - chhota sa hisaab."""
+    if checked:
+        line = (f"Foxlead checked {checked} new post{'s' if checked != 1 else ''} for you. None was a strong enough "
+                f"fit this time &mdash; the best scored {best}/10, and a lead needs {threshold}/10.")
+    else:
+        line = "No new posts matched your field since the last scan."
+    body = (f'<p style="font-size:15px;color:{SOFT};line-height:1.6;margin:4px 2px;">{line}</p>'
+            f'<p style="font-size:15px;color:{SOFT};line-height:1.6;margin:10px 2px;">Foxlead keeps scanning on your '
+            f'schedule and emails you as soon as a lead turns up.</p>')
+    send(user["email"], "No new leads this scan — Foxlead",
+         layout("Scan finished", f"Searching for you as a {user['title']}", body, "Open your dashboard", config.APP_URL + "/dashboard"),
+         f"Scan finished - no new leads.\n\n{line.replace('&mdash;', '-')}\n\nDashboard: {config.APP_URL}/dashboard")
+
+
 def send_verify(email, name, url):
     body = (f'<p style="font-size:15px;color:{INK};line-height:1.6;margin:4px 2px;">Hi {esc(name) or "there"},</p>'
             f'<p style="font-size:15px;color:{SOFT};line-height:1.6;margin:10px 2px;">Please confirm this is your email so '

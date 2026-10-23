@@ -20,7 +20,7 @@ from flask import (Flask, abort, flash, g, jsonify, make_response, redirect, ren
 from itsdangerous import BadSignature, URLSafeTimedSerializer
 from werkzeug.security import check_password_hash, generate_password_hash
 
-from . import chat, config, db, drafts, i18n, llm, mailer, notify, plans
+from . import chat, config, db, drafts, i18n, llm, mailer, notify, plans, schedule
 from .i18n import t
 from .professions import BY_ID, FEEDS, PROFESSIONS
 
@@ -500,14 +500,28 @@ def profile(user):
             "keywords": [k.lower() for k in split_list(f.get("keywords"), 30)],
             "feeds": [k for k in f.getlist("feeds") if k in FEEDS],
             "threshold": min(9, max(5, int(f.get("threshold", 7) or 7))),
-            "email_enabled": f.get("email_enabled") == "1",
+            "email_enabled": f.get("email_mode", "leads") != "off",
+            "email_every_scan": f.get("email_mode") == "every",
             "portfolio": f.get("portfolio", "").strip()[:200],
             "blocklist": split_list(f.get("blocklist"), 50),
             "weekly_report": f.get("weekly_report") == "1",
             "telegram_alerts": f.get("telegram_alerts") if f.get("telegram_alerts") in ("all", "hot", "off") else "all",
             "max_age_days": int(f.get("max_age_days")) if f.get("max_age_days", "").isdigit()
                             and int(f.get("max_age_days")) in config.AGE_DAYS_CHOICES else config.AGE_DAYS_DEFAULT,
+            # auto-scan: har kitne ghante (0 = band); 24 par kis baje (user ke time zone mein)
+            "scan_every": int(f.get("scan_every")) if f.get("scan_every", "").isdigit()
+                          and int(f.get("scan_every")) in (0,) + config.SCAN_EVERY_CHOICES else None,
+            "scan_hour": int(f.get("scan_hour")) if f.get("scan_hour", "").isdigit() and int(f.get("scan_hour")) < 24 else None,
         }
+        floor = plans.limits(user)["scan_every_hours"]
+        if p["scan_every"] and p["scan_every"] < floor:
+            p["scan_every"] = floor          # Free plan: din mein ek se zyada nahi (form mein bhi band hai)
+        if p["scan_every"] != 24:
+            p["scan_hour"] = None
+        tz = f.get("timezone", "")[:64]
+        if tz and tz != user["timezone"] and schedule.valid_tz(tz):
+            with db.connect() as conn:
+                conn.execute("UPDATE users SET timezone = ? WHERE id = ?", (tz, user["id"]))
         if p["portfolio"] and not re.match(r"^https?://\S+$", p["portfolio"]):
             flash(t("Portfolio link should start with https:// — or leave it empty."))
         elif not p["skills"]:
@@ -540,7 +554,9 @@ def profile(user):
         telegram["link"] = notify.connect_link(user["id"])
     return render_template("profile.html", user=user, profile=existing,
                            professions=PROFESSIONS, feeds=FEEDS, telegram=telegram,
-                           age_choices=config.AGE_DAYS_CHOICES, age_default=config.AGE_DAYS_DEFAULT)
+                           age_choices=config.AGE_DAYS_CHOICES, age_default=config.AGE_DAYS_DEFAULT,
+                           scan_choices=config.SCAN_EVERY_CHOICES, scan_floor=plans.limits(user)["scan_every_hours"],
+                           scan_every=schedule.every_hours(user, existing) if existing else plans.limits(user)["scan_every_hours"])
 
 
 @app.route("/telegram/check", methods=["POST"])
@@ -623,6 +639,10 @@ def api_data(user):
                 WHERE up.user_id = ? AND up.score > 0 AND COALESCE(p.posted_at, p.fetched_at) >= ?""",
                 (wid, iso_ago(prof["max_age_days"]))).fetchone()
             window = {"days": prof["max_age_days"], "checked": checked, "best": best or 0}
+        owner = conn.execute("SELECT * FROM users WHERE id = ?", (wid,)).fetchone()   # team: owner ka schedule
+    nxt = schedule.next_scan(owner, prof, runs[0]["time"] if runs else None) if prof else None
+    auto = {"every": schedule.every_hours(owner, prof) if prof else 0, "hour": prof["scan_hour"] if prof else None,
+            "next_at": nxt.strftime("%Y-%m-%dT%H:%M:%SZ") if nxt else None}
     blocklist = prof["blocklist"] if prof else []
     # block list wale leads foran chhupa do (robot naye aise posts score hi nahi karega)
     leads = [dict(r) | {"is_job": bool(r["is_job"])} for r in rows
@@ -641,6 +661,7 @@ def api_data(user):
         } if prof else None,
         leads=leads,
         window=window,
+        auto=auto,
         runs=[dict(r) for r in runs],
         scan={"running": wid in _scanning},
         drafts={"used": used, "limit": lim["drafts_per_day"]},
@@ -1132,6 +1153,50 @@ def admin_set_plan(user, uid):
     return redirect(url_for("admin"))
 
 
+# ================= Auto-scan scheduler =================
+# Web app ke andar hi: har minute dekho kis user ka chuna hua waqt ho gaya, unka scan chalao.
+# (Alag process chahiye to: python -m foxlead.pipeline --loop - dono saath chalein to lock ek hi ko chalne deta hai.)
+
+_scheduler_started = False
+
+
+def scheduler_tick():
+    """Ek minute ka kaam: jin ka waqt ho gaya unka scan (jin ka "Scan now" chal raha hai unhe chhod kar).
+    Return: kin users ka scan chala."""
+    from . import pipeline
+    with _scan_lock:
+        ids = [i for i in pipeline.due_user_ids() if i not in _scanning]
+        _scanning.update(ids)
+    if not ids:
+        return []
+    try:
+        pipeline.run_scheduled(ids)
+    finally:
+        with _scan_lock:
+            for i in ids:
+                _scanning.discard(i)
+                _last_scan[i] = time.time()
+    return ids
+
+
+def start_scheduler():
+    global _scheduler_started
+    if _scheduler_started or not config.SCHEDULER:
+        return
+    _scheduler_started = True
+
+    def loop():
+        while True:
+            time.sleep(60)
+            try:
+                scheduler_tick()
+            except Exception as e:                   # ek tick ki galti se scheduler band na ho
+                app.logger.warning("auto-scan tick failed: %s", e)
+
+    threading.Thread(target=loop, daemon=True, name="foxlead-scheduler").start()
+
+
 if __name__ == "__main__":
     # sirf apne laptop ke liye (127.0.0.1) - online server par gunicorn/waitress use karna
+    start_scheduler()
     app.run(host="127.0.0.1", port=5000, debug=False)
