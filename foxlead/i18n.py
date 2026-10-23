@@ -47,7 +47,7 @@ UR = {
     "New password · Foxlead": "نیا پاس ورڈ · Foxlead",
     "Choose a new password": "نیا پاس ورڈ بنائیں",
     "New password": "نیا پاس ورڈ",
-    "Type it again": "دوبارہ لکھیں",
+    "Confirm new password": "نئے پاس ورڈ کی تصدیق کریں",
     "Save new password": "نیا پاس ورڈ محفوظ کریں",
     "You're offline": "آپ آف لائن ہیں",
     "Foxlead needs the internet to show your leads. Check your connection and try again.":
