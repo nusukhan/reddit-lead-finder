@@ -202,6 +202,8 @@
   <div class="chat-head">
     {% include "_logo.html" %}
     <div class="grow"><b>{{ _("Ask Foxlead") }}</b><span id="chat-limit">{{ _("Your lead assistant") }}</span></div>
+    <button type="button" class="chat-x chat-ico" id="chat-sound" aria-pressed="true" title="{{ _('Sounds') }}" aria-label="{{ _('Sounds') }}"><svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round" aria-hidden="true"><path d="M18 8a6 6 0 0 0-12 0c0 7-3 9-3 9h18s-3-2-3-9"/><path d="M13.7 21a2 2 0 0 1-3.4 0"/></svg></button>
+    <button type="button" class="chat-x chat-ico" id="chat-speak" aria-pressed="false" title="{{ _('Read answers aloud') }}" aria-label="{{ _('Read answers aloud') }}"><svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round" aria-hidden="true"><path d="M11 5 6 9H2v6h4l5 4z"/><path d="M15.5 8.5a5 5 0 0 1 0 7M19 5a10 10 0 0 1 0 14"/></svg></button>
     <button type="button" class="chat-x" id="chat-clear" title="{{ _('Clear chat') }}">{{ _("Clear") }}</button>
     <button type="button" class="chat-x" id="chat-close" aria-label="{{ _('Close chat') }}">✕</button>
   </div>

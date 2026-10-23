@@ -18,6 +18,50 @@
   const SEEN = "foxlead-chat-seen";
   if (!store.get(SEEN)) fab.classList.add("attn");     // pehli baar tak button blink kare
 
+  // ---------- awaazein: bhejne par "pop", jawab par "ding", nayi leads par chime ----------
+  // Browser khud banata hai (Web Audio) - koi file nahi. User ne 🔔 band kiya ho to chup.
+  const soundBtn = $c("chat-sound"), speakBtn = $c("chat-speak");
+  let soundOn = store.get("foxlead-chat-sound") !== "0";      // pehle se on
+  let speakAll = store.get("foxlead-chat-speak") === "1";     // har jawab khud bolo (pehle se off)
+  let audio = null;
+  function play(notes) {
+    if (!soundOn) return;
+    try {
+      audio = audio || new (window.AudioContext || window.webkitAudioContext)();
+      if (audio.state === "suspended") audio.resume();
+      let at = audio.currentTime + 0.01;
+      for (const [freq, len] of notes) {
+        const osc = audio.createOscillator(), gain = audio.createGain();
+        osc.type = "sine"; osc.frequency.value = freq;
+        gain.gain.setValueAtTime(0.0001, at);
+        gain.gain.exponentialRampToValueAtTime(0.18, at + 0.015);       // halki si - kaan na chubhe
+        gain.gain.exponentialRampToValueAtTime(0.0001, at + len);
+        osc.connect(gain).connect(audio.destination);
+        osc.start(at); osc.stop(at + len + 0.02);
+        at += len * 0.75;
+      }
+    } catch { /* purana browser ya awaaz band - koi baat nahi */ }
+  }
+  const SOUND = {
+    send: [[660, 0.07]],
+    reply: [[880, 0.12], [1320, 0.2]],
+    greet: [[784, 0.12], [988, 0.12], [1175, 0.22]],
+    error: [[330, 0.14], [247, 0.22]],
+  };
+  function showToggles() {
+    soundBtn.setAttribute("aria-pressed", String(soundOn));
+    soundBtn.title = t(soundOn ? "Sounds on" : "Sounds off");
+    speakBtn.setAttribute("aria-pressed", String(speakAll));
+    speakBtn.title = t(speakAll ? "Reading answers aloud" : "Read answers aloud");
+  }
+  soundBtn.addEventListener("click", () => { soundOn = !soundOn; store.set("foxlead-chat-sound", soundOn ? "1" : "0"); showToggles(); play(SOUND.send); });
+  speakBtn.addEventListener("click", () => {
+    speakAll = !speakAll; store.set("foxlead-chat-speak", speakAll ? "1" : "0"); showToggles();
+    if (!speakAll) stopSpeaking();
+  });
+  if (!window.speechSynthesis) speakBtn.hidden = true;
+  let byVoice = false;            // sawal mic se aaya - to jawab bhi bol kar
+
   // ---------- awaaz: jawab sunna ----------
   const synth = window.speechSynthesis;
   let speakingBtn = null;
@@ -152,16 +196,23 @@
     if (!text || busy) return;
     busy = true; send.disabled = true;
     const leadId = lead ? lead.id : null;
+    const voiced = byVoice; byVoice = false;
+    stopSpeaking();
+    play(SOUND.send);
     bubble("user", text);
     input.value = ""; input.style.height = "";
     const wait = typing();
     try {
       const r = await api("/api/chat", leadId ? { message: text, lead_id: leadId } : { message: text });
       wait.remove();
-      bubble("assistant", r.answer, leadId);
+      const b = bubble("assistant", r.answer, leadId);
       setLimit(r.used, r.limit);
+      play(SOUND.reply);
+      const listen = [...b.querySelectorAll(".acts button")].find(x => x.textContent === t("Listen"));
+      if ((speakAll || voiced) && listen) speak(r.answer, listen);      // awaaz mein sawal = awaaz mein jawab
     } catch (e) {
       wait.remove();
+      play(SOUND.error);
       bubble("error", t("Sorry — {e}", { e: e.message })).className = "msg assistant error";
     } finally { busy = false; send.disabled = false; input.focus(); }
   }
@@ -191,6 +242,7 @@
       greet.dataset.key = key;
       $c("chat-greet-text").textContent = n === 1 ? t("1 new lead from the latest scan — want to see it?")
         : t("{n} new leads from the latest scan — want the best one first?", { n });
+      if (greet.hidden) play(SOUND.greet);       // browser pehli click se pehle awaaz rok sakta hai - tab chup
       greet.hidden = false;
     } else if (!n) greet.hidden = true;
   };
@@ -210,17 +262,20 @@
       rec.interimResults = true;
       const before = input.value.trim(), ph = input.placeholder;
       mic.classList.add("on"); mic.setAttribute("aria-label", t("Stop listening")); input.placeholder = t("Listening…");
+      let heard = false;
       rec.onresult = e => {
         const said = [...e.results].map(r => r[0].transcript).join("");
         input.value = (before ? before + " " : "") + said;
         input.dispatchEvent(new Event("input"));
+        heard = said.trim().length > 0;
       };
       rec.onerror = e => toast(e.error === "not-allowed" || e.error === "service-not-allowed"
         ? t("Allow microphone access to ask by voice.") : t("Couldn't hear that — try again."), null, null, "err");
       rec.onend = () => {
         rec = null;
         mic.classList.remove("on"); mic.setAttribute("aria-label", t("Speak your question")); input.placeholder = ph;
-        input.focus();
+        if (heard && !before) { byVoice = true; ask(input.value); }      // sirf bol kar poocha - foran bhejo, jawab bhi bol kar
+        else input.focus();
       };
       rec.start();
     });
@@ -237,4 +292,5 @@
   suggest.addEventListener("click", e => { const b = e.target.closest("button"); if (b) ask(b.textContent); });
   document.addEventListener("keydown", e => { if (e.key === "Escape" && !box.hidden) open(false); });
   renderSuggest();
+  showToggles();
 })();
