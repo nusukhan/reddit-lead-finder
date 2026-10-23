@@ -1255,6 +1255,21 @@ def admin_toggle_user(user, uid):
     return redirect(url_for("admin"))
 
 
+@app.route("/admin/users/<int:uid>/reset-link", methods=["POST"])
+@admin_required
+def admin_reset_link(user, uid):
+    """Kisi ki reset email na pahunche (spam, ghalat address) to admin link bana kar khud de (WhatsApp waghaira).
+    Wahi link jo email mein jata hai: 1 ghanta chalta hai, password badalte hi bekaar."""
+    with db.connect() as conn:
+        target = conn.execute("SELECT * FROM users WHERE id = ?", (uid,)).fetchone()
+    if target is None:
+        abort(404)
+    link = url_for("reset_password", token=make_token("reset", target), _external=True)
+    app.logger.warning("password reset: admin %s made a reset link for user %s", user["id"], uid)
+    flash(f"Reset link for {target['email']} (works for 1 hour — send it to them yourself): {link}", "info")
+    return redirect(url_for("admin"))
+
+
 @app.route("/admin/users/<int:uid>/plan", methods=["POST"])
 @admin_required
 def admin_set_plan(user, uid):

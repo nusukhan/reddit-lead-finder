@@ -79,7 +79,13 @@
         <td class="mono">{{ u.scans }}<small>{{ ("last " ~ u.last_scan[:10]) if u.last_scan else "" }}</small></td>
         <td class="mono">{{ u.drafts }}</td>
         <td class="mono">${{ "%.3f"|format(cost(u.tin, u.tout)) }}</td>
-        <td>{% if u.id != user.id %}
+        <td>
+          <form method="post" action="{{ url_for('admin_reset_link', uid=u.id) }}" style="margin:0 0 4px"
+                title="Their reset email didn't arrive? Make the link here and send it to them yourself.">
+            <input type="hidden" name="csrf_token" value="{{ csrf_token() }}">
+            <button class="mini" type="submit">Reset link</button>
+          </form>
+          {% if u.id != user.id %}
           <form method="post" action="{{ url_for('admin_toggle_user', uid=u.id) }}" style="margin:0"
                 onsubmit="return confirm('{{ 'Enable' if u.disabled else 'Disable' }} this account?')">
             <input type="hidden" name="csrf_token" value="{{ csrf_token() }}">

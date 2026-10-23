@@ -53,7 +53,7 @@ a { color: var(--accent-2); }
 .switch { text-align: center; color: var(--soft); font-size: 0.86rem; margin-top: 18px; }
 /* messages: hara = kamyabi, laal = ghalti, neela = maloomat - har ek ke saath nishan bhi (sirf rang par bharosa nahi) */
 .flash { display: flex; gap: 10px; align-items: flex-start; border-radius: 9px; padding: 10px 13px; font-size: 0.86rem;
-         margin-bottom: 14px; border: 1px solid; line-height: 1.45; }
+         margin-bottom: 14px; border: 1px solid; line-height: 1.45; overflow-wrap: anywhere; }
 .flash::before { flex: none; width: 18px; height: 18px; border-radius: 50%; display: inline-flex; align-items: center;
                  justify-content: center; font-size: 0.7rem; font-weight: 800; color: #0b0e15; margin-top: 1px; }
 .flash.err  { background: var(--skip-bg);  color: #f6c2bd; border-color: #6a2d28; }
