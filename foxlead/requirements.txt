@@ -6,3 +6,4 @@ python-dotenv==1.2.4
 requests==2.34.2
 stripe==16.0.0
 tzdata==2025.2
+waitress==3.0.2

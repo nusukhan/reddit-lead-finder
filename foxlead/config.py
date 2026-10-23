@@ -76,5 +76,10 @@ SCAN_EVERY_CHOICES = (1, 3, 6, 12, 24)
 # web app ke andar hi scheduler chale (har minute dekhta hai kis ka waqt ho gaya). Tests mein 0.
 SCHEDULER = os.getenv("FOXLEAD_SCHEDULER", "1") == "1"
 
+# internet par link ke peeche (Cloudflare Tunnel / hosting): asli https aur visitor ka IP headers se lo
+BEHIND_PROXY = os.getenv("FOXLEAD_BEHIND_PROXY", "0") == "1"
+# Free user profile baar baar save kare to bhi din mein itne se zyada scan nahi (Claude ka kharcha)
+FREE_SCANS_PER_DAY = 5
+
 # profile/field badalne par foran scan (tests mein FOXLEAD_AUTO_SCAN=0 - asli internet/Claude na chale)
 AUTO_SCAN_ON_PROFILE = os.getenv("FOXLEAD_AUTO_SCAN", "1") == "1"

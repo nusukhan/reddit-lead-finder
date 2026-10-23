@@ -32,6 +32,11 @@ app.config.update(
     SESSION_COOKIE_SAMESITE="Lax",
     PERMANENT_SESSION_LIFETIME=timedelta(days=30),
 )
+if config.BEHIND_PROXY:
+    # tunnel/hosting ke peeche: https, asli host aur visitor ka IP (login ki limit har shakhs ki alag) headers se
+    from werkzeug.middleware.proxy_fix import ProxyFix
+    app.wsgi_app = ProxyFix(app.wsgi_app, x_for=1, x_proto=1, x_host=1)
+    app.config.update(SESSION_COOKIE_SECURE=True, PREFERRED_URL_SCHEME="https")
 
 db.init_db()
 
@@ -542,7 +547,7 @@ def profile(user):
                         AND remind_at IS NULL AND assigned_to IS NULL)) AND feedback = ''""", (user["id"],))
             if p["remote_only"] and not p["country"]:
                 flash(t("Tip: add your country — then Foxlead can hide remote jobs that are limited to other countries."), "info")
-            if (changed or window_changed) and config.AUTO_SCAN_ON_PROFILE and start_scan(user["id"], queue=True):
+            if (changed or window_changed) and config.AUTO_SCAN_ON_PROFILE and scans_left_today(user) and start_scan(user["id"], queue=True):
                 flash(t("Profile saved. Foxlead is scanning for leads that fit you — they'll appear in a few minutes."), "success")
             else:
                 flash(t("Profile saved. Foxlead will now look for leads that fit you."), "success")
@@ -780,6 +785,15 @@ def api_scan(user):
 
 _rescan = set()               # scan ke dauran profile badli - khatam hote hi nayi profile se dobara
 _scan_lock = threading.Lock()
+
+
+def scans_left_today(user):
+    """Free plan: profile badal badal kar din mein FREE_SCANS_PER_DAY se zyada scan nahi. Pro: koi hadd nahi."""
+    if plans.plan_of(user) != "free":
+        return True
+    with db.connect() as conn:
+        n = conn.execute("SELECT COUNT(*) FROM runs WHERE user_id = ? AND time >= ?", (user["id"], iso_ago(1))).fetchone()[0]
+    return n < config.FREE_SCANS_PER_DAY
 
 
 def start_scan(uid, queue=False):
