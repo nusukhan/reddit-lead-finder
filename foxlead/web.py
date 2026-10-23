@@ -705,6 +705,11 @@ def api_lead(user):
             return jsonify(error="bad feedback"), 400
         sets.append("feedback = ?")
         args.append(body["feedback"])
+    if "draft" in body:                     # chatbot ka jawab "Put in draft" se
+        if not isinstance(body["draft"], str):
+            return jsonify(error="bad draft"), 400
+        sets += ["draft = ?", "draft_at = ?"]
+        args += [body["draft"][:6000], db.now_utc()]
     if "deal_value" in body:
         value = body["deal_value"]
         if value is not None and (isinstance(value, bool) or not isinstance(value, (int, float))
@@ -840,13 +845,74 @@ def api_chat_history(user):
         rows = conn.execute("SELECT role, content FROM chat_messages WHERE user_id = ? ORDER BY id DESC LIMIT 40",
                             (user["id"],)).fetchall()[::-1]
         used = chat_used_today(conn, user["id"])
-    return jsonify(messages=[dict(r) for r in rows], used=used, limit=plans.limits(user)["chat_per_day"])
+        tips = chat_tips(conn, user, db.get_profile(conn, workspace_id(user)), workspace_id(user))
+    return jsonify(messages=[dict(r) for r in rows], used=used, limit=plans.limits(user)["chat_per_day"], tips=tips)
+
+
+def chat_tips(conn, user, prof, wid):
+    """Chatbot ke mashwaray: leads kam aa rahi hon to kya badlein - ek click mein lagne wale."""
+    if not prof or is_member(user):
+        return []
+    week = conn.execute("SELECT COUNT(*) FROM user_posts WHERE user_id = ? AND is_lead = 1 AND feedback = '' AND scored_at >= ?",
+                        (wid, iso_ago(7))).fetchone()[0]
+    best = conn.execute("""SELECT MAX(up.score) FROM user_posts up JOIN posts p ON p.id = up.post_id
+                           WHERE up.user_id = ? AND up.is_lead = 0 AND COALESCE(p.posted_at, p.fetched_at) >= ?""",
+                        (wid, iso_ago(prof["max_age_days"]))).fetchone()[0] or 0
+    tips = []
+    if week < 3 and prof["max_age_days"] < max(config.AGE_DAYS_CHOICES):
+        tips.append({"id": "days7", "text": t("Only {n} leads this week. Look back 7 days to see more jobs?", n=week),
+                     "action": t("Switch to 7 days"), "change": {"max_age_days": max(config.AGE_DAYS_CHOICES)}})
+    low = prof["threshold"] - 1
+    if week < 3 and low >= 5 and best == low:
+        tips.append({"id": f"threshold{low}", "text": t("Some posts scored {s}/10 — just under your bar of {bar}/10. Count them as leads?", s=low, bar=prof["threshold"]),
+                     "action": t("Lower the bar to {s}", s=low), "change": {"threshold": low}})
+    if prof["remote_only"] and not prof["country"]:
+        tips.append({"id": "country", "text": t("Add your country so I can hide remote jobs that are limited to other countries."),
+                     "action": t("Open profile"), "link": url_for("profile")})
+    return tips
+
+
+@app.route("/api/profile/quick", methods=["POST"])
+@login_required
+def api_profile_quick(user):
+    """Chatbot ke mashwaray ek click mein: din (3/7) ya lead ki hadd badlo."""
+    if is_member(user):
+        return jsonify(error=t("Your team's profile is managed by the team owner.")), 403
+    body = request.get_json(silent=True) or {}
+    with db.connect() as conn:
+        prof = db.get_profile(conn, user["id"])
+    if prof is None:
+        return jsonify(error=t("Set up your profile first.")), 400
+    promoted, scanning = 0, False
+    if "max_age_days" in body:
+        if body["max_age_days"] not in config.AGE_DAYS_CHOICES:
+            return jsonify(error="bad value"), 400
+        with db.connect() as conn:
+            conn.execute("UPDATE profiles SET max_age_days = ?, updated_at = ? WHERE user_id = ?",
+                         (body["max_age_days"], db.now_utc(), user["id"]))
+        scanning = config.AUTO_SCAN_ON_PROFILE and scans_left_today(user) and start_scan(user["id"], queue=True)
+    elif "threshold" in body:
+        if not isinstance(body["threshold"], int) or isinstance(body["threshold"], bool) or not 5 <= body["threshold"] <= 9:
+            return jsonify(error="bad value"), 400
+        with db.connect() as conn:
+            conn.execute("UPDATE profiles SET threshold = ?, updated_at = ? WHERE user_id = ?",
+                         (body["threshold"], db.now_utc(), user["id"]))
+            # jo posts nayi hadd tak pahunchti thin unhe foran lead bana do (dobara Claude ki zaroorat nahi)
+            promoted = conn.execute("""UPDATE user_posts SET is_lead = 1,
+                    verdict = CASE WHEN (SELECT is_job FROM posts WHERE id = post_id) THEN 'Apply' ELSE 'Review' END,
+                    note = CASE WHEN (SELECT is_job FROM posts WHERE id = post_id) THEN 'Job listing — apply directly.'
+                                ELSE 'Open the post and check the replies first.' END
+                WHERE user_id = ? AND is_lead = 0 AND feedback = '' AND score >= ?""", (user["id"], body["threshold"])).rowcount
+    else:
+        return jsonify(error="nothing to change"), 400
+    return jsonify(ok=True, scanning=bool(scanning), promoted=promoted)
 
 
 @app.route("/api/chat", methods=["POST"])
 @login_required
 def api_chat(user):
-    message = ((request.get_json(silent=True) or {}).get("message") or "").strip()
+    body = request.get_json(silent=True) or {}
+    message = (body.get("message") or "").strip()
     if not message:
         return jsonify(error=t("Type a message first.")), 400
     if len(message) > 2000:
@@ -860,8 +926,14 @@ def api_chat(user):
     if used >= limit:
         more = "" if plans.plan_of(user) == "pro" else t(" Upgrade to Pro for 50 a day.")
         return jsonify(error=t("You've used all {limit} messages for today — more tomorrow.", limit=limit) + more), 429
+    lead = None
+    if isinstance(body.get("lead_id"), int):          # lead panel se "Ask Foxlead" - sirf apne workspace ki lead
+        with db.connect() as conn:
+            lead = conn.execute("""SELECT p.id, p.title, p.text, p.source, p.is_job, p.link, up.score, up.verdict, up.status, up.reason
+                                   FROM user_posts up JOIN posts p ON p.id = up.post_id
+                                   WHERE up.user_id = ? AND up.post_id = ?""", (wid, body["lead_id"])).fetchone()
     try:
-        answer = chat.reply(user, profile, message, data_uid=wid)
+        answer = chat.reply(user, profile, message, data_uid=wid, lead=lead)
     except llm.LLMError as e:
         return jsonify(error=t(str(e))), 502
     return jsonify(answer=answer, used=used + 1, limit=limit)

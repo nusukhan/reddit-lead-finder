@@ -1,29 +1,85 @@
 // chat.js - "Ask Foxlead" chatbot. Jawab hamesha textContent se dikhaye jaate hain
 // (HTML kabhi nahi), kyunki un mein Reddit ke titles bhi ho sakte hain.
+// Saath mein: nayi leads ka number + salaam, lead ke baare mein poochna, ek-click sawal,
+// awaaz se poochna / jawab sunna, "Put in draft", aur profile ke mashwaray.
 (() => {
-  const fab = document.getElementById("chat-fab"), box = document.getElementById("chat");
-  const log = document.getElementById("chat-log"), form = document.getElementById("chat-form");
-  const input = document.getElementById("chat-input"), send = document.getElementById("chat-send");
-  const limitEl = document.getElementById("chat-limit"), suggest = document.getElementById("chat-suggest");
+  const $c = id => document.getElementById(id);
+  const fab = $c("chat-fab"), box = $c("chat"), log = $c("chat-log"), form = $c("chat-form");
+  const input = $c("chat-input"), send = $c("chat-send"), limitEl = $c("chat-limit"), suggest = $c("chat-suggest");
+  const badge = $c("fab-badge"), greet = $c("chat-greet"), about = $c("chat-about"), mic = $c("chat-mic");
   let loaded = false, busy = false;
-  // pehli baar tak button blink kare (localStorage na chale - private window - to bhi kuch na toote)
-  const SEEN = "foxlead-chat-seen";
-  try { if (!localStorage.getItem(SEEN)) fab.classList.add("attn"); } catch { fab.classList.add("attn"); }
+  let lead = null;            // lead panel se "Ask Foxlead" - abhi jis lead ke baare mein baat ho rahi hai
 
-  function bubble(role, text) {
+  // localStorage private window mein band ho sakta hai - tab bhi kuch na toote
+  const store = {
+    get: k => { try { return localStorage.getItem(k); } catch { return null; } },
+    set: (k, v) => { try { localStorage.setItem(k, v); } catch { /* koi baat nahi */ } },
+  };
+  const SEEN = "foxlead-chat-seen";
+  if (!store.get(SEEN)) fab.classList.add("attn");     // pehli baar tak button blink kare
+
+  // ---------- awaaz: jawab sunna ----------
+  const synth = window.speechSynthesis;
+  let speakingBtn = null;
+  function stopSpeaking() {
+    if (synth) synth.cancel();
+    if (speakingBtn) { speakingBtn.classList.remove("on"); speakingBtn.textContent = t("Listen"); speakingBtn = null; }
+  }
+  function speak(text, btn) {
+    const same = speakingBtn === btn;
+    stopSpeaking();
+    if (same) return;                                  // dobara dabaya = band
+    const u = new SpeechSynthesisUtterance(text);
+    u.lang = /[؀-ۿ]/.test(text) ? "ur-PK" : "en-US";
+    const voice = synth.getVoices().find(v => v.lang.replace("_", "-").toLowerCase().startsWith(u.lang.slice(0, 2)));
+    if (voice) u.voice = voice;
+    u.onend = u.onerror = () => { if (speakingBtn === btn) stopSpeaking(); };
+    speakingBtn = btn; btn.classList.add("on"); btn.textContent = t("Stop");
+    synth.speak(u);
+  }
+
+  // ---------- messages ----------
+  function actBtn(label, onClick, primary) {
+    const b = document.createElement("button");
+    b.type = "button"; b.textContent = label;
+    if (primary) b.className = "primary";
+    b.addEventListener("click", () => onClick(b));
+    return b;
+  }
+  function bubble(role, text, leadId) {
     const b = document.createElement("div");
     b.className = "msg " + role;
     b.textContent = text;
     b.dir = "auto";                      // Urdu ho ya English - sahi taraf se
     if (role === "assistant") {
-      const c = document.createElement("button");
-      c.type = "button"; c.className = "copy"; c.textContent = t("Copy");
-      c.addEventListener("click", async () => {
-        try { await navigator.clipboard.writeText(text); c.textContent = t("Copied ✓"); } catch { c.textContent = t("Select and copy"); }
-        setTimeout(() => { c.textContent = t("Copy"); }, 2000);
-      });
-      b.append(c);
+      const acts = document.createElement("div");
+      acts.className = "acts";
+      if (leadId) acts.append(actBtn(t("Put in draft"), async btn => {
+        btn.disabled = true;
+        try {
+          await api("/api/lead", { id: leadId, draft: text });
+          window.dispatchEvent(new CustomEvent("foxlead:draft", { detail: { id: leadId, text } }));
+          toast(t("Saved as this lead's draft."), null, null, "ok");
+        } catch (e) { toast(t("Could not save: {e}", { e: e.message }), null, null, "err"); }
+        finally { btn.disabled = false; }
+      }, true));
+      acts.append(actBtn(t("Copy"), async btn => {
+        try { await navigator.clipboard.writeText(text); btn.textContent = t("Copied ✓"); } catch { btn.textContent = t("Select and copy"); }
+        setTimeout(() => { btn.textContent = t("Copy"); }, 2000);
+      }));
+      if (synth) acts.append(actBtn(t("Listen"), btn => speak(text, btn)));
+      b.append(acts);
     }
+    log.append(b);
+    log.scrollTop = log.scrollHeight;
+    return b;
+  }
+  function typing() {
+    const b = document.createElement("div");
+    b.className = "msg typing";
+    b.setAttribute("role", "status");
+    b.setAttribute("aria-label", t("Thinking…"));
+    b.append(document.createElement("span"), document.createElement("span"), document.createElement("span"));
     log.append(b);
     log.scrollTop = log.scrollHeight;
     return b;
@@ -34,15 +90,48 @@
     h.textContent = t("Hi! I know your profile and your leads. Ask me which lead to act on, to write a proposal or follow-up, how to price a job, or how to get better leads. You can write in English, Urdu or Roman Urdu.");
     log.append(h);
   }
+  // mashwaray (server se): "7 din kar dein", "hadd 6 kar dein" - ek click mein
+  function tipCard(tip) {
+    const key = "foxlead-tip-" + tip.id;
+    if (store.get(key)) return;
+    const c = document.createElement("div");
+    c.className = "chat-tip";
+    const p = document.createElement("div");
+    p.textContent = tip.text;
+    const acts = document.createElement("div");
+    acts.className = "acts";
+    acts.append(actBtn(tip.action, async btn => {
+      if (tip.link) { location.href = tip.link; return; }
+      btn.disabled = true;
+      try {
+        const r = await api("/api/profile/quick", tip.change);
+        p.textContent = r.promoted ? t("Done — {n} more posts now count as leads.", { n: r.promoted })
+          : r.scanning ? t("Done — Foxlead is scanning with the new setting.") : t("Done — saved.");
+        acts.remove();
+        store.set(key, "1");
+        window.dispatchEvent(new CustomEvent("foxlead:refresh"));
+      } catch (e) { btn.disabled = false; toast(e.message, null, null, "err"); }
+    }, true), actBtn(t("Not now"), () => { store.set(key, "1"); c.remove(); }));
+    c.append(p, acts);
+    log.append(c);
+  }
   function setLimit(used, limit) { limitEl.textContent = t("{left} of {limit} messages left today", { left: Math.max(0, limit - used), limit }); }
+
+  // ek-click sawal - lead ke baare mein baat ho to us ke hisaab se
+  function renderSuggest() {
+    const qs = lead
+      ? [t(lead.is_job ? "Write my application" : "Write my reply"), t("How much should I charge?"), t("Is this lead worth my time?")]
+      : [t("What should I apply to today?"), t("Why am I getting few leads?"), t("Write a follow-up for my last application"), t("Give me today's summary in Urdu")];
+    suggest.replaceChildren(...qs.map(q => { const b = document.createElement("button"); b.type = "button"; b.textContent = q; return b; }));
+  }
 
   async function load() {
     try {
       const d = await api("/api/chat");
       log.replaceChildren();
       hello();
+      (d.tips || []).forEach(tipCard);
       d.messages.forEach(m => bubble(m.role, m.content));
-      suggest.hidden = d.messages.length > 0;
       setLimit(d.used, d.limit);
       loaded = true;
     } catch (e) { toast(e.message, null, null, "err"); }
@@ -52,36 +141,100 @@
     fab.setAttribute("aria-expanded", String(show));
     if (show) {
       fab.classList.remove("attn");
-      try { localStorage.setItem(SEEN, "1"); } catch { /* koi baat nahi */ }
-      if (!loaded) load(); input.focus();
-    }
+      store.set(SEEN, "1");
+      hideGreet();
+      if (!loaded) load();
+      input.focus();
+    } else { stopSpeaking(); stopListening(); }
   }
   async function ask(text) {
     text = text.trim();
     if (!text || busy) return;
-    busy = true; send.disabled = true; suggest.hidden = true;
+    busy = true; send.disabled = true;
+    const leadId = lead ? lead.id : null;
     bubble("user", text);
     input.value = ""; input.style.height = "";
-    const wait = bubble("thinking", t("Thinking…"));
+    const wait = typing();
     try {
-      const r = await api("/api/chat", { message: text });
+      const r = await api("/api/chat", leadId ? { message: text, lead_id: leadId } : { message: text });
       wait.remove();
-      bubble("assistant", r.answer);
+      bubble("assistant", r.answer, leadId);
       setLimit(r.used, r.limit);
     } catch (e) {
       wait.remove();
-      bubble("assistant", t("Sorry — {e}", { e: e.message })).classList.add("error");
+      bubble("error", t("Sorry — {e}", { e: e.message })).className = "msg assistant error";
     } finally { busy = false; send.disabled = false; input.focus(); }
   }
 
+  // ---------- lead ke baare mein (lead panel ka "Ask Foxlead" button) ----------
+  function setLead(l) {
+    lead = l ? { id: l.id, title: l.title, score: l.score, is_job: l.is_job } : null;
+    about.hidden = !lead;
+    if (lead) $c("chat-about-text").textContent = t("About: {title} · {score}/10", { title: lead.title, score: lead.score });
+    input.placeholder = lead ? t("Ask about this lead…") : t("Ask about your leads…");
+    renderSuggest();
+  }
+  window.chatAbout = l => { setLead(l); open(true); };
+  $c("chat-about-x").addEventListener("click", () => { setLead(null); input.focus(); });
+
+  // ---------- nayi leads: button par number + salaam ka bubble ----------
+  function hideGreet() {
+    if (!greet.hidden && greet.dataset.key) store.set(greet.dataset.key, "1");
+    greet.hidden = true;
+  }
+  window.chatNewLeads = (n, runTime) => {
+    badge.hidden = !n;
+    badge.textContent = n > 9 ? "9+" : String(n);
+    if (n && box.hidden) fab.classList.add("attn");
+    const key = "foxlead-greet-" + (runTime || "");
+    if (n && box.hidden && runTime && !store.get(key)) {
+      greet.dataset.key = key;
+      $c("chat-greet-text").textContent = n === 1 ? t("1 new lead from the latest scan — want to see it?")
+        : t("{n} new leads from the latest scan — want the best one first?", { n });
+      greet.hidden = false;
+    } else if (!n) greet.hidden = true;
+  };
+  $c("chat-greet-go").addEventListener("click", () => { hideGreet(); setLead(null); open(true); ask(t("Which of my new leads should I look at first?")); });
+  $c("chat-greet-x").addEventListener("click", hideGreet);
+
+  // ---------- awaaz se poochna (mic) ----------
+  const SR = window.SpeechRecognition || window.webkitSpeechRecognition;
+  let rec = null;
+  function stopListening() { if (rec) rec.stop(); }
+  if (SR) {
+    mic.hidden = false;
+    mic.addEventListener("click", () => {
+      if (rec) { rec.stop(); return; }
+      rec = new SR();
+      rec.lang = document.documentElement.lang === "ur" ? "ur-PK" : "en-US";
+      rec.interimResults = true;
+      const before = input.value.trim(), ph = input.placeholder;
+      mic.classList.add("on"); mic.setAttribute("aria-label", t("Stop listening")); input.placeholder = t("Listening…");
+      rec.onresult = e => {
+        const said = [...e.results].map(r => r[0].transcript).join("");
+        input.value = (before ? before + " " : "") + said;
+        input.dispatchEvent(new Event("input"));
+      };
+      rec.onerror = e => toast(e.error === "not-allowed" || e.error === "service-not-allowed"
+        ? t("Allow microphone access to ask by voice.") : t("Couldn't hear that — try again."), null, null, "err");
+      rec.onend = () => {
+        rec = null;
+        mic.classList.remove("on"); mic.setAttribute("aria-label", t("Speak your question")); input.placeholder = ph;
+        input.focus();
+      };
+      rec.start();
+    });
+  }
+
   fab.addEventListener("click", () => open(true));
-  document.getElementById("chat-close").addEventListener("click", () => { open(false); fab.focus(); });
-  document.getElementById("chat-clear").addEventListener("click", async () => {
-    try { await api("/api/chat/clear", {}); log.replaceChildren(); hello(); suggest.hidden = false; } catch (e) { toast(e.message, null, null, "err"); }
+  $c("chat-close").addEventListener("click", () => { open(false); fab.focus(); });
+  $c("chat-clear").addEventListener("click", async () => {
+    try { await api("/api/chat/clear", {}); log.replaceChildren(); hello(); } catch (e) { toast(e.message, null, null, "err"); }
   });
   form.addEventListener("submit", e => { e.preventDefault(); ask(input.value); });
   input.addEventListener("keydown", e => { if (e.key === "Enter" && !e.shiftKey) { e.preventDefault(); ask(input.value); } });
   input.addEventListener("input", () => { input.style.height = "auto"; input.style.height = Math.min(input.scrollHeight, 120) + "px"; });
   suggest.addEventListener("click", e => { const b = e.target.closest("button"); if (b) ask(b.textContent); });
   document.addEventListener("keydown", e => { if (e.key === "Escape" && !box.hidden) open(false); });
+  renderSuggest();
 })();

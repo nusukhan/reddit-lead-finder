@@ -307,6 +307,8 @@ function lineChart(box, buckets, series, H) {
 // ---------- rail + topbar ----------
 function renderChrome() {
   const last = runs[0];
+  // chatbot button par pichhle scan ki nayi leads ka number + salaam
+  if (window.chatNewLeads) window.chatNewLeads(leads.filter(isNew).length, last && last.time);
   const ok = last && RUN_OK.has(last.status);
   const dotCls = scanning ? "dot busy" : !last ? "dot idle" : ok ? "dot" : "dot bad";
   $("engine-dot").className = dotCls;
@@ -685,6 +687,7 @@ function renderPanel() {
   const open = $("p-open");
   open.href = safeUrl(l.link);
   open.querySelector("span").textContent = t(l.is_job ? "Open job" : "Open post");
+  $("p-ask").onclick = () => { closeLead(); if (window.chatAbout) window.chatAbout(l); };   // chatbot isi lead ke saath
 }
 // sirf status wala hissa (chips + mark button) - baaqi panel (likha hua note/draft) waisa hi rahe
 function renderPanelStatus(l) {
@@ -740,4 +743,10 @@ document.addEventListener("keydown", e => { if (e.key === "Escape") { closeLead(
 let resizeTimer;
 window.addEventListener("resize", () => { clearTimeout(resizeTimer); resizeTimer = setTimeout(renderAll, 120); });
 renderAll();
+// chatbot ne "Put in draft" kiya ya profile badli - dashboard bhi taaza karo
+window.addEventListener("foxlead:draft", e => {
+  const l = leads.find(x => x.id === e.detail.id);
+  if (l) { l.draft = e.detail.text; l.draft_at = new Date().toISOString(); panelFor = null; renderAll(); }
+});
+window.addEventListener("foxlead:refresh", () => load().catch(e => toast(e.message, null, null, "err")));
 load().catch(e => toast(e.message, null, null, "err"));

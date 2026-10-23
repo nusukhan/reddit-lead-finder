@@ -37,7 +37,10 @@ html[dir="rtl"] .panel.show { transform: translateX(0); }
 html[dir="rtl"] .reason { border-left: 0; border-right: 3px solid var(--accent); border-radius: 10px 0 0 10px; }
 
 /* chatbot baayein kone mein */
-html[dir="rtl"] :is(.chat-fab, .chat) { right: auto; left: 20px; }
+html[dir="rtl"] :is(.chat-fab, .chat, .chat-greet) { right: auto; left: 20px; }
+html[dir="rtl"] .chat-greet { border-radius: 14px 14px 14px 4px; }
+html[dir="rtl"] .fab-badge { right: auto; left: -6px; }
+html[dir="rtl"] .chat-about { padding: 6px 11px 6px 6px; }
 html[dir="rtl"] .msg.user { border-bottom-right-radius: 12px; border-bottom-left-radius: 4px; }
 html[dir="rtl"] .msg.assistant { border-bottom-left-radius: 12px; border-bottom-right-radius: 4px; }
 @media (max-width: 560px) { html[dir="rtl"] .chat { right: auto; left: 8px; } }
