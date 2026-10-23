@@ -568,8 +568,8 @@ UR = {
     "Scan started — this takes a few minutes.": "اسکین شروع ہو گیا — اس میں چند منٹ لگتے ہیں۔",
     "Sent ✓ — check your inbox": "بھیج دی ✓ — اپنا ان باکس دیکھیں",
     "Select and copy": "منتخب کر کے کاپی کریں",
-    "Hi! I know your profile and your leads. Ask me which lead to act on, to write a proposal or follow-up, how to price a job, or how to get better leads. You can write in English, Urdu or Roman Urdu.":
-        "السلام علیکم! مجھے آپ کی پروفائل اور لیڈز معلوم ہیں۔ پوچھیں کس لیڈ پر کام کریں، پروپوزل یا فالو اپ لکھوائیں، کام کی قیمت کیا رکھیں، یا بہتر لیڈز کیسے ملیں۔ آپ اردو، انگریزی یا رومن اردو میں لکھ سکتے ہیں۔",
+    "Hi! I know your profile and your leads. Ask me which lead to act on, to write a proposal or follow-up, how to price a job, or how to get better leads.":
+        "السلام علیکم! مجھے آپ کی پروفائل اور لیڈز معلوم ہیں۔ پوچھیں کس لیڈ پر کام کریں، پروپوزل یا فالو اپ لکھوائیں، کام کی قیمت کیا رکھیں، یا بہتر لیڈز کیسے ملیں۔",
     "{left} of {limit} messages left today": "آج {limit} میں سے {left} پیغامات باقی",
     "Thinking…": "سوچ رہا ہے…",
     "Sorry — {e}": "معذرت — {e}",

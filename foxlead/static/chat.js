@@ -87,7 +87,7 @@
   function hello() {
     const h = document.createElement("div");
     h.className = "chat-hello";
-    h.textContent = t("Hi! I know your profile and your leads. Ask me which lead to act on, to write a proposal or follow-up, how to price a job, or how to get better leads. You can write in English, Urdu or Roman Urdu.");
+    h.textContent = t("Hi! I know your profile and your leads. Ask me which lead to act on, to write a proposal or follow-up, how to price a job, or how to get better leads.");
     log.append(h);
   }
   // mashwaray (server se): "7 din kar dein", "hadd 6 kar dein" - ek click mein
