@@ -6,6 +6,9 @@
   const input = document.getElementById("chat-input"), send = document.getElementById("chat-send");
   const limitEl = document.getElementById("chat-limit"), suggest = document.getElementById("chat-suggest");
   let loaded = false, busy = false;
+  // pehli baar tak button blink kare (localStorage na chale - private window - to bhi kuch na toote)
+  const SEEN = "foxlead-chat-seen";
+  try { if (!localStorage.getItem(SEEN)) fab.classList.add("attn"); } catch { fab.classList.add("attn"); }
 
   function bubble(role, text) {
     const b = document.createElement("div");
@@ -47,7 +50,11 @@
   function open(show) {
     box.hidden = !show; fab.hidden = show;
     fab.setAttribute("aria-expanded", String(show));
-    if (show) { if (!loaded) load(); input.focus(); }
+    if (show) {
+      fab.classList.remove("attn");
+      try { localStorage.setItem(SEEN, "1"); } catch { /* koi baat nahi */ }
+      if (!loaded) load(); input.focus();
+    }
   }
   async function ask(text) {
     text = text.trim();

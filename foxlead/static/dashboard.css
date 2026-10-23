@@ -1,13 +1,13 @@
 /* dashboard.css - Foxlead dashboard (rang/fonts foxlead.css se aate hain) */
 [hidden] { display: none !important; }
 
-/* badi screen par bhi poori jagah lo (pehle 1160px ka chhota box beech mein reh jata tha) */
-.app { max-width: 1680px; margin: 14px auto; padding: 0 14px 14px; }
-.frame { position: relative; display: flex; background: var(--bg-2); border: 1px solid var(--line);
-         border-radius: 16px; overflow: hidden; min-height: max(700px, calc(100vh - 28px)); box-shadow: 0 30px 70px -24px rgba(0,0,0,0.65); }
+/* har screen par kinare se kinare tak - koi chhota box beech mein nahi (phone, laptop, bada monitor sab) */
+.app { margin: 0; padding: 0; }
+.frame { position: relative; display: flex; background: var(--bg-2); min-height: 100vh; min-height: 100dvh; overflow-x: clip; }
 
 /* rail */
-.rail { width: 210px; flex: 0 0 210px; background: var(--rail); border-right: 1px solid var(--line); padding: 18px 14px; display: flex; flex-direction: column; }
+.rail { width: 210px; flex: 0 0 210px; background: var(--rail); border-right: 1px solid var(--line); padding: 18px 14px; display: flex; flex-direction: column;
+        position: sticky; top: 0; height: 100vh; height: 100dvh; overflow-y: auto; }   /* scroll karte waqt menu saath rahe */
 .rail .brand { padding: 4px 8px 20px; }
 .nav-label { font-size: 0.62rem; text-transform: uppercase; letter-spacing: 0.1em; color: var(--faint); padding: 0 11px; margin: 6px 0 7px; }
 .nav { display: flex; flex-direction: column; gap: 2px; }
@@ -32,7 +32,7 @@
 @media (prefers-reduced-motion: reduce) { .dot.busy { animation: none; } }
 
 /* main + topbar */
-.main { flex: 1; min-width: 0; display: flex; flex-direction: column; }
+.main { flex: 1; min-width: 0; display: flex; flex-direction: column; padding-bottom: 72px; }   /* neeche chatbot button ke liye jagah */
 .topbar { display: flex; align-items: center; gap: 12px; padding: 14px 22px; border-bottom: 1px solid var(--line); flex-wrap: wrap; }
 .search { flex: 1; min-width: 150px; display: flex; align-items: center; gap: 9px; background: var(--panel); border: 1px solid var(--line); border-radius: 9px; padding: 0 13px; color: var(--faint); font-size: 0.86rem; }
 .search svg { width: 15px; height: 15px; flex: 0 0 auto; }
@@ -58,7 +58,7 @@
 .titlerow { padding: 18px 22px 2px; display: flex; align-items: center; gap: 10px; flex-wrap: wrap; }
 .titlerow h1 { font-size: 1.4rem; font-weight: 700; margin: 0; letter-spacing: -0.02em; }
 .titlerow .sub { margin: 3px 0 0; font-size: 0.84rem; color: var(--soft); }
-.titlerow .grow { flex: 1; min-width: 0; }
+.titlerow .grow { flex: 1 1 260px; min-width: 0; }   /* jagah kam ho to buttons neeche - heading ki line ek-ek lafz mein na toote */
 .live { display: inline-flex; align-items: center; gap: 7px; font-size: 0.74rem; color: var(--soft); background: var(--panel); border: 1px solid var(--line); padding: 6px 12px; border-radius: 20px; white-space: nowrap; }
 .scanbtn { display: inline-flex; align-items: center; gap: 7px; font-size: 0.78rem; font-weight: 650; color: #fff; background: var(--accent); border: 1px solid var(--accent); padding: 6px 13px; border-radius: 20px; cursor: pointer; box-shadow: 0 4px 14px var(--glow); }
 .scanbtn svg { width: 14px; height: 14px; }
@@ -207,9 +207,8 @@ tbody tr.done .lead-title { color: var(--soft); }
 
 @media (max-width: 900px) { .grid { grid-template-columns: 1fr 1fr; } .grid:not(.three) .card:first-child { grid-column: 1 / -1; } }
 @media (max-width: 720px) {
-  .app { margin-top: 0; }
-  .frame { flex-direction: column; min-height: 0; }
-  .rail { width: auto; flex: none; flex-direction: row; align-items: center; gap: 8px; padding: 10px 12px; border-right: 0; border-bottom: 1px solid var(--line); overflow-x: auto; }
+  .frame { flex-direction: column; }
+  .rail { position: sticky; top: 0; z-index: 5; height: auto; width: auto; flex: none; flex-direction: row; align-items: center; gap: 8px; padding: 10px 12px; border-right: 0; border-bottom: 1px solid var(--line); overflow-x: auto; }
   .rail .brand { padding: 0 4px 0 0; }
   .rail .brand-name, .nav-label, .rail-card, .nav .sep { display: none; }
   .nav { flex-direction: row; }
@@ -218,8 +217,6 @@ tbody tr.done .lead-title { color: var(--soft); }
   .toast { margin-left: 14px; margin-right: 14px; }
 }
 @media (max-width: 560px) {
-  .app { padding: 0; }
-  .frame { border-radius: 0; border-left: 0; border-right: 0; }
   .grid, .grid.three { grid-template-columns: 1fr; }
 }
 
@@ -229,6 +226,13 @@ tbody tr.done .lead-title { color: var(--soft); }
             box-shadow: 0 10px 30px -6px rgba(61,130,246,0.55); }
 .chat-fab svg { width: 18px; height: 18px; }
 .chat-fab:hover { filter: brightness(1.07); }
+/* "attn": jab tak user ne chatbot ek baar bhi nahi khola - halki si blink/pulse taake nazar aaye */
+.chat-fab.attn::after { content: ""; position: absolute; inset: 0; border-radius: inherit; pointer-events: none;
+                        animation: fab-pulse 1.8s ease-out infinite; }
+.chat-fab.attn::before { content: ""; position: absolute; top: -3px; right: -3px; width: 12px; height: 12px; border-radius: 50%;
+                         background: var(--apply); border: 2px solid var(--bg); }
+@keyframes fab-pulse { 0% { box-shadow: 0 0 0 0 rgba(61,130,246,0.6); } 75%, 100% { box-shadow: 0 0 0 16px rgba(61,130,246,0); } }
+@media (prefers-reduced-motion: reduce) { .chat-fab.attn::after { animation: none; } }
 .chat { position: fixed; right: 20px; bottom: 20px; z-index: 8; width: 400px; max-width: calc(100vw - 32px); height: 600px; max-height: calc(100vh - 40px);
         display: flex; flex-direction: column; background: var(--over); border: 1px solid var(--line); border-radius: 16px; overflow: hidden;
         box-shadow: 0 30px 70px -20px rgba(0,0,0,0.75); }
