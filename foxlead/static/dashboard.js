@@ -107,7 +107,7 @@ function toast(msg, actionLabel, onAction, kind = "info") {
 }
 
 // ---------- state ----------
-let PROFILE = null, leads = [], runs = [], scanning = false, DRAFTS = { used: 0, limit: 30 };
+let PROFILE = null, WINDOW = null, leads = [], runs = [], scanning = false, DRAFTS = { used: 0, limit: 30 };
 let ME = { id: null }, TEAM = [];   // team ke log (lead assign karne ke liye)
 const state = { screen: "leads", range: 30, chip: "apply", sort: "new", q: "", open: null };   // default: Apply leads, nayi pehle
 
@@ -124,6 +124,7 @@ const fmtISODay = iso => fmtDay(new Date(iso + "T00:00:00"));
 async function load() {
   const d = await api("/api/data");
   PROFILE = d.profile;
+  WINDOW = d.window;
   DRAFTS = d.drafts;
   ME = d.user; TEAM = d.team || [];
   // ms = Foxlead ne kab dhoondi (date range/charts); posted = post asal mein kab hui (dikhane + sort ke liye)
@@ -218,10 +219,11 @@ function clickRow(l, cells) {
   tr.addEventListener("keydown", e => { if (e.key === "Enter") openLead(l); });
   return tr;
 }
-function emptyRow(cols, title, text) {
+function emptyRow(cols, title, text, extra) {
   const box = el("div", { class: "empty" });
   box.innerHTML = EMPTY_ICON;   // sirf fixed icon - koi data nahi
   box.append(el("h3", {}, title), el("p", {}, text));
+  if (extra) box.append(extra);
   return el("tr", {}, el("td", { colspan: cols, style: "border:0" }, box));
 }
 function statCard(title, value, note, color) {
@@ -389,7 +391,14 @@ function renderLeads() {
   $("showing").textContent = state.chip === "due" ? t("Showing {n} follow-ups due", { n: list.length })
     : t("Showing {n} of {total} leads · {range}", { n: list.length, total: ranged.length, range: state.range ? t("last {label}", { label }) : label });
   const body = $("tbody");
-  if (!leads.length) body.replaceChildren(emptyRow(5, t(scanning ? "Scanning…" : "No leads yet"),
+  if (!leads.length && !scanning && WINDOW && WINDOW.checked) {
+    // scan hua par koi lead nahi - saaf batao kyun, aur zyada din ka rasta dikhao
+    const more = WINDOW.days < 7 && !ME.member
+      ? el("p", { style: "margin-top:10px" }, el("a", { href: "/profile", class: "field-link" }, t("Look back 7 days instead (Field & profile → Step 4)"))) : null;
+    body.replaceChildren(emptyRow(5, t("No leads in the last {days} days", { days: WINDOW.days }),
+      t("Foxlead checked {n} posts that match your field. The best scored {best}/10 — a lead needs {bar}/10. Every scan checks the newest posts.",
+        { n: WINDOW.checked, best: WINDOW.best, bar: PROFILE.threshold }), more));
+  } else if (!leads.length) body.replaceChildren(emptyRow(5, t(scanning ? "Scanning…" : "No leads yet"),
     t(scanning ? "Foxlead is checking Reddit and job boards for you right now." : "Press “Scan now”, or wait for the hourly scan. Leads that fit your profile show up here.")));
   else if (!list.length) body.replaceChildren(emptyRow(5, t("Nothing matches"), t("Try another filter, a longer date range, or clear the search.")));
   else body.replaceChildren(...list.map(l => clickRow(l, [leadCell(l, subLine(l)), scoreBadge(l), srcBadge(l), compCell(l), verdictPill(l)])));

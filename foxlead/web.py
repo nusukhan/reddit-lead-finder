@@ -615,6 +615,14 @@ def api_data(user):
                             "WHERE user_id = ? ORDER BY id DESC LIMIT 200", (wid,)).fetchall()
         used = drafts_used_today(conn, user["id"])
         members = team_members(conn, user)
+        # khaali dashboard par batane ke liye: user ke din (3/7) mein kitni matching posts check huin, best score kya tha
+        window = None
+        if prof:
+            checked, best = conn.execute("""
+                SELECT COUNT(*), MAX(up.score) FROM user_posts up JOIN posts p ON p.id = up.post_id
+                WHERE up.user_id = ? AND up.score > 0 AND COALESCE(p.posted_at, p.fetched_at) >= ?""",
+                (wid, iso_ago(prof["max_age_days"]))).fetchone()
+            window = {"days": prof["max_age_days"], "checked": checked, "best": best or 0}
     blocklist = prof["blocklist"] if prof else []
     # block list wale leads foran chhupa do (robot naye aise posts score hi nahi karega)
     leads = [dict(r) | {"is_job": bool(r["is_job"])} for r in rows
@@ -628,9 +636,11 @@ def api_data(user):
             "title": prof["title"], "skills": prof["skills"], "country": prof["country"],
             "remote_only": bool(prof["remote_only"]), "threshold": prof["threshold"],
             "subreddits": prof["subreddits"], "keywords": prof["keywords"], "blocklist": blocklist,
+            "max_age_days": prof["max_age_days"],
             "feeds": [{"key": k, "label": FEEDS[k]["label"]} for k in prof["feeds"] if k in FEEDS],
         } if prof else None,
         leads=leads,
+        window=window,
         runs=[dict(r) for r in runs],
         scan={"running": wid in _scanning},
         drafts={"used": used, "limit": lim["drafts_per_day"]},

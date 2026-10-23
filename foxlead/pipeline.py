@@ -150,7 +150,7 @@ def process_user(user, profile):
     to_score.sort(key=lambda p: scoring.relevance(p, profile) >= 6, reverse=True)
     later = to_score[config.MAX_SCORE_PER_USER:]          # baaki agli baar
     to_score = to_score[:config.MAX_SCORE_PER_USER]
-    log(f"  {user['email']}: {len(mine)} new posts, {len(skipped)} filtered out, scoring {len(to_score)}"
+    log(f"  {user['email']}: {len(mine)} unchecked posts, {len(skipped)} don't match keywords/block list, scoring {len(to_score)}"
         + (f" ({len(later)} wait for next run)" if later else ""))
     # chhaante hue posts save NAHI karte: keyword/block list badle (ya code behtar ho) to agle scan mein
     # khud dobara parkhe jaate hain. Ye check muft hai (Claude nahi), aur sirf taazi posts par hota hai.
