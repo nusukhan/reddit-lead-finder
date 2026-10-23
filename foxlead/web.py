@@ -528,7 +528,7 @@ def profile(user):
                         AND remind_at IS NULL AND assigned_to IS NULL)) AND feedback = ''""", (user["id"],))
             if p["remote_only"] and not p["country"]:
                 flash(t("Tip: add your country — then Foxlead can hide remote jobs that are limited to other countries."), "info")
-            if (changed or window_changed) and config.AUTO_SCAN_ON_PROFILE and start_scan(user["id"]):
+            if (changed or window_changed) and config.AUTO_SCAN_ON_PROFILE and start_scan(user["id"], queue=True):
                 flash(t("Profile saved. Foxlead is scanning for leads that fit you — they'll appear in a few minutes."), "success")
             else:
                 flash(t("Profile saved. Foxlead will now look for leads that fit you."), "success")
@@ -747,20 +747,34 @@ def api_scan(user):
     return jsonify(ok=True, running=True)
 
 
-def start_scan(uid):
-    """Robot ko is user ke liye background mein chalao (ek waqt mein ek hi). False = pehle se chal raha hai."""
-    if uid in _scanning:
-        return False
-    _scanning.add(uid)
-    _last_scan[uid] = time.time()
+_rescan = set()               # scan ke dauran profile badli - khatam hote hi nayi profile se dobara
+_scan_lock = threading.Lock()
+
+
+def start_scan(uid, queue=False):
+    """Robot ko is user ke liye background mein chalao (ek waqt mein ek hi).
+    Pehle se chal raha ho: queue=True par wo khatam hote hi dobara chalega (True), warna False."""
+    with _scan_lock:
+        if uid in _scanning:
+            if queue:
+                _rescan.add(uid)
+            return queue
+        _scanning.add(uid)
+        _last_scan[uid] = time.time()
 
     def work():
-        try:
-            from .pipeline import run_for_users
-            run_for_users([uid])
-        finally:
-            _last_scan[uid] = time.time()      # cooldown scan ke KHATAM hone se ginti shuru
-            _scanning.discard(uid)
+        from .pipeline import run_for_users
+        while True:
+            try:
+                run_for_users([uid])
+            except Exception as e:             # ek scan ki galti se agla (queued) scan na ruke
+                app.logger.warning("scan for user %s failed: %s", uid, e)
+            with _scan_lock:
+                if uid not in _rescan:
+                    _last_scan[uid] = time.time()      # cooldown scan ke KHATAM hone se ginti shuru
+                    _scanning.discard(uid)
+                    return
+                _rescan.discard(uid)
 
     threading.Thread(target=work, daemon=True).start()
     return True
