@@ -116,6 +116,15 @@
         </div>
       </div>
       <div class="field">
+        <label for="max_age_days">{{ _("Check posts from the last") }}</label>
+        <select class="select" id="max_age_days" name="max_age_days">
+          {% for d in age_choices %}
+          <option value="{{ d }}" {% if (profile.max_age_days if profile and profile.max_age_days else age_default) == d %}selected{% endif %}>{{ _("{n} days", n=d) }}</option>
+          {% endfor %}
+        </select>
+        <p class="hint">{{ _("The newest posts always show on top. 7 days finds more leads; 3 days keeps only the freshest.") }}</p>
+      </div>
+      <div class="field">
         <label class="toggle-row"><input type="checkbox" name="weekly_report" value="1" {% if not profile or profile.weekly_report %}checked{% endif %}>
           {{ _("Send me a weekly report every Monday (leads, replies, wins, earnings)") }}</label>
       </div>

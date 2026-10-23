@@ -67,8 +67,9 @@ STRIPE_WEBHOOK_SECRET = os.getenv("STRIPE_WEBHOOK_SECRET", "")
 
 # robot ki hadein (kharcha aur waqt control mein rahe)
 MAX_SCORE_PER_USER = 40     # ek run mein ek user ke liye zyada se zyada itni posts Claude ko
-POST_MAX_AGE_HOURS = 72     # Reddit: pichhle 3 din ki posts (nayi upar dikhti hain)
-JOB_MAX_AGE_HOURS = 72      # job boards: sirf nayi jobs (pehle apply karne wale ko faida)
+AGE_DAYS_CHOICES = (3, 7)   # user chunta hai: pichhle kitne din ki posts check hon (nayi hamesha upar)
+AGE_DAYS_DEFAULT = 3
+FETCH_MAX_AGE_HOURS = max(AGE_DAYS_CHOICES) * 24   # robot itni purani tak laata hai, phir har user apni hadd lagata hai
 
 # profile/field badalne par foran scan (tests mein FOXLEAD_AUTO_SCAN=0 - asli internet/Claude na chale)
 AUTO_SCAN_ON_PROFILE = os.getenv("FOXLEAD_AUTO_SCAN", "1") == "1"

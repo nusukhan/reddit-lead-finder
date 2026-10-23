@@ -13,7 +13,7 @@ from urllib.parse import quote
 
 import requests
 
-from .config import JOB_MAX_AGE_HOURS, POST_MAX_AGE_HOURS
+from .config import FETCH_MAX_AGE_HOURS
 from .professions import FEEDS
 
 HEADERS = {"User-Agent": "foxlead-lead-finder/1.0"}
@@ -39,7 +39,7 @@ def parse_iso(s):
         return None
 
 
-def too_old(dt, hours=POST_MAX_AGE_HOURS):
+def too_old(dt, hours=FETCH_MAX_AGE_HOURS):
     return dt is not None and dt < datetime.now(timezone.utc) - timedelta(hours=hours)
 
 
@@ -162,7 +162,7 @@ def fetch_rss(key):
             when = parsedate_to_datetime(it.findtext("pubDate", ""))
         except (TypeError, ValueError):
             when = None
-        if too_old(when, hours=JOB_MAX_AGE_HOURS):
+        if too_old(when):
             continue
         link = (it.findtext("link", "") or "").strip()
         if link:
@@ -187,7 +187,7 @@ def fetch_hn():
         text = clean(c.get("text"))
         when = parse_iso(c.get("created_at"))
         # thread mahine ki 1 tareekh ko banta hai - sirf us mein nayi daali gayi jobs lo
-        if not text or too_old(when, hours=JOB_MAX_AGE_HOURS):
+        if not text or too_old(when):
             continue
         first = re.split(r"(?<=[.!?])\s|\n", text, maxsplit=1)[0]
         posts.append({"link": f"https://news.ycombinator.com/item?id={c['id']}", "source": "hn_hiring",
@@ -204,7 +204,7 @@ def fetch_remoteok():
     posts = []
     for j in data[1:]:                            # pehla item legal notice hai
         when = parse_iso(j.get("date"))
-        if too_old(when, hours=JOB_MAX_AGE_HOURS) or not j.get("url"):
+        if too_old(when) or not j.get("url"):
             continue
         extra = " · ".join(x for x in [j.get("location") or "", ", ".join(j.get("tags") or [])] if x)
         posts.append({"link": j["url"], "source": "remoteok",

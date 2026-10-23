@@ -141,6 +141,7 @@ NEW_COLUMNS = {
         "blocklist": "TEXT NOT NULL DEFAULT '[]'",      # ye words wale posts kabhi mat dikhao
         "weekly_report": "INTEGER NOT NULL DEFAULT 1",  # har Monday summary email
         "telegram_alerts": "TEXT NOT NULL DEFAULT 'all'",  # all / hot / off
+        "max_age_days": "INTEGER NOT NULL DEFAULT 3",   # pichhle kitne din ki posts (3 ya 7)
     },
     "user_posts": {
         "draft": "TEXT NOT NULL DEFAULT ''",            # AI reply / cover letter draft
@@ -234,20 +235,21 @@ def save_profile(conn, user_id, p):
     conn.execute("""
         INSERT INTO profiles (user_id, profession, title, skills, ideal_client, country, remote_only,
                               subreddits, keywords, feeds, threshold, email_enabled, portfolio, blocklist,
-                              weekly_report, telegram_alerts, updated_at)
-        VALUES (?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?)
+                              weekly_report, telegram_alerts, max_age_days, updated_at)
+        VALUES (?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?)
         ON CONFLICT(user_id) DO UPDATE SET
             profession=excluded.profession, title=excluded.title, skills=excluded.skills,
             ideal_client=excluded.ideal_client, country=excluded.country, remote_only=excluded.remote_only,
             subreddits=excluded.subreddits, keywords=excluded.keywords, feeds=excluded.feeds,
             threshold=excluded.threshold, email_enabled=excluded.email_enabled,
             portfolio=excluded.portfolio, blocklist=excluded.blocklist, weekly_report=excluded.weekly_report,
-            telegram_alerts=excluded.telegram_alerts, updated_at=excluded.updated_at
+            telegram_alerts=excluded.telegram_alerts, max_age_days=excluded.max_age_days,
+            updated_at=excluded.updated_at
     """, (user_id, p["profession"], p["title"], p["skills"], p["ideal_client"], p["country"],
           int(p["remote_only"]), json.dumps(p["subreddits"]), json.dumps(p["keywords"]),
           json.dumps(p["feeds"]), int(p["threshold"]), int(p["email_enabled"]),
           p.get("portfolio", ""), json.dumps(p.get("blocklist", [])), int(p.get("weekly_report", True)),
-          p.get("telegram_alerts", "all"), now_utc()))
+          p.get("telegram_alerts", "all"), int(p.get("max_age_days", 3)), now_utc()))
 
 
 def blocked(text, blocklist):

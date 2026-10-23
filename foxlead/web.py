@@ -505,6 +505,8 @@ def profile(user):
             "blocklist": split_list(f.get("blocklist"), 50),
             "weekly_report": f.get("weekly_report") == "1",
             "telegram_alerts": f.get("telegram_alerts") if f.get("telegram_alerts") in ("all", "hot", "off") else "all",
+            "max_age_days": int(f.get("max_age_days")) if f.get("max_age_days", "").isdigit()
+                            and int(f.get("max_age_days")) in config.AGE_DAYS_CHOICES else config.AGE_DAYS_DEFAULT,
         }
         if p["portfolio"] and not re.match(r"^https?://\S+$", p["portfolio"]):
             flash(t("Portfolio link should start with https:// — or leave it empty."))
@@ -514,6 +516,8 @@ def profile(user):
             flash(t("Pick at least one place to search: a subreddit or a job board."))
         else:
             changed = existing is None or any(existing.get(k) != p[k] for k in SEARCH_KEYS)
+            # sirf din (3/7) badle: purane faisle sahi hain, bas naye din wali posts ke liye scan
+            window_changed = existing is not None and existing.get("max_age_days") != p["max_age_days"]
             with db.connect() as conn:
                 db.save_profile(conn, user["id"], p)
                 if changed:
@@ -524,7 +528,7 @@ def profile(user):
                         AND remind_at IS NULL AND assigned_to IS NULL)) AND feedback = ''""", (user["id"],))
             if p["remote_only"] and not p["country"]:
                 flash(t("Tip: add your country — then Foxlead can hide remote jobs that are limited to other countries."), "info")
-            if changed and config.AUTO_SCAN_ON_PROFILE and start_scan(user["id"]):
+            if (changed or window_changed) and config.AUTO_SCAN_ON_PROFILE and start_scan(user["id"]):
                 flash(t("Profile saved. Foxlead is scanning for leads that fit you — they'll appear in a few minutes."), "success")
             else:
                 flash(t("Profile saved. Foxlead will now look for leads that fit you."), "success")
@@ -535,7 +539,8 @@ def profile(user):
     if telegram["on"] and telegram["allowed"] and not telegram["connected"]:
         telegram["link"] = notify.connect_link(user["id"])
     return render_template("profile.html", user=user, profile=existing,
-                           professions=PROFESSIONS, feeds=FEEDS, telegram=telegram)
+                           professions=PROFESSIONS, feeds=FEEDS, telegram=telegram,
+                           age_choices=config.AGE_DAYS_CHOICES, age_default=config.AGE_DAYS_DEFAULT)
 
 
 @app.route("/telegram/check", methods=["POST"])

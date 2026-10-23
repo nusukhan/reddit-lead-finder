@@ -483,6 +483,8 @@ UR = {
     "found {ago}": "ملی {ago}",
     "posted {ago}": "پوسٹ ہوئی {ago}",
     "Sort leads": "لیڈز کی ترتیب",
+    "Check posts from the last": "پچھلے کتنے دنوں کی پوسٹس دیکھیں",
+    "The newest posts always show on top. 7 days finds more leads; 3 days keeps only the freshest.": "نئی پوسٹس ہمیشہ اوپر نظر آتی ہیں۔ 7 دن میں زیادہ لیڈز ملتی ہیں؛ 3 دن میں صرف تازہ ترین۔",
     "Tip: add your country — then Foxlead can hide remote jobs that are limited to other countries.": "مشورہ: اپنا ملک لکھیں — پھر Foxlead وہ ریموٹ جابز چھپا دے گا جو صرف دوسرے ملکوں کے لیے ہیں۔",
     "Newest first": "نئی پہلے",
     "Top score first": "زیادہ اسکور پہلے",

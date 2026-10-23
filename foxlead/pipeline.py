@@ -124,13 +124,13 @@ def process_user(user, profile):
     uid = user["id"]
     reddit_src, feed_src = user_sources(profile)
     with db.connect() as conn:
-        # sirf taazi: pichhle 3 din (post kab hui - Foxlead ne kab dekhi wo nahi)
+        # sirf user ke chune din (3 ya 7) ki posts - post kab hui, Foxlead ne kab dekhi wo nahi
         rows = conn.execute("""
             SELECT p.* FROM posts p
-            WHERE COALESCE(p.posted_at, p.fetched_at) >= CASE WHEN p.is_job THEN ? ELSE ? END
+            WHERE COALESCE(p.posted_at, p.fetched_at) >= ?
               AND NOT EXISTS (SELECT 1 FROM user_posts up WHERE up.user_id = ? AND up.post_id = p.id)
             ORDER BY COALESCE(p.posted_at, p.fetched_at) DESC                    -- nayi posts pehle
-        """, (ago_iso(hours=config.JOB_MAX_AGE_HOURS), ago_iso(hours=config.POST_MAX_AGE_HOURS), uid)).fetchall()
+        """, (ago_iso(days=profile["max_age_days"]), uid)).fetchall()
         not_relevant = [r["title"] for r in conn.execute("""
             SELECT p.title FROM user_posts up JOIN posts p ON p.id = up.post_id
             WHERE up.user_id = ? AND up.feedback = 'not_relevant' ORDER BY up.scored_at DESC LIMIT 8""", (uid,))]
