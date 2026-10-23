@@ -32,10 +32,35 @@ app.config.update(
     SESSION_COOKIE_SAMESITE="Lax",
     PERMANENT_SESSION_LIFETIME=timedelta(days=30),
 )
+class HttpsBehindProxy:
+    """Tunnel/hosting ke peeche asli scheme pehchano: Cloudflare ka "Cf-Visitor", warna X-Forwarded-Proto, warna https.
+    Cloudflare tunnel X-Forwarded-Proto nahi bhejta - is ke baghair reset/verify emails mein http:// link ban raha tha,
+    aur http par secure cookie nahi chalti, to naya password save hi nahi hota tha. http par aaye to https par bhejo."""
+
+    def __init__(self, wsgi_app):
+        self.wsgi_app = wsgi_app
+
+    def __call__(self, environ, start_response):
+        visitor = environ.get("HTTP_CF_VISITOR", "")
+        if visitor:
+            proto = "http" if '"http"' in visitor else "https"
+        else:
+            proto = (environ.get("HTTP_X_FORWARDED_PROTO") or "https").split(",")[0].strip().lower()
+        if proto == "http":
+            from urllib.parse import quote
+            host = (environ.get("HTTP_X_FORWARDED_HOST") or environ.get("HTTP_HOST", "")).split(",")[0].strip()
+            query = environ.get("QUERY_STRING", "")
+            url = "https://" + host + quote(environ.get("PATH_INFO", ""), safe="/:@!$&'()*+,;=-._~") + ("?" + query if query else "")
+            start_response("301 Moved Permanently", [("Location", url), ("Content-Length", "0")])
+            return [b""]
+        environ["wsgi.url_scheme"] = "https"
+        return self.wsgi_app(environ, start_response)
+
+
 if config.BEHIND_PROXY:
     # tunnel/hosting ke peeche: https, asli host aur visitor ka IP (login ki limit har shakhs ki alag) headers se
     from werkzeug.middleware.proxy_fix import ProxyFix
-    app.wsgi_app = ProxyFix(app.wsgi_app, x_for=1, x_proto=1, x_host=1)
+    app.wsgi_app = HttpsBehindProxy(ProxyFix(app.wsgi_app, x_for=1, x_host=1))
     app.config.update(SESSION_COOKIE_SECURE=True, PREFERRED_URL_SCHEME="https")
 
 db.init_db()
@@ -405,13 +430,23 @@ def forgot():
         recent = time.time() - _reset_sent.get(email, 0) < 120
         with db.connect() as conn:
             user = conn.execute("SELECT * FROM users WHERE email = ?", (email,)).fetchone()
-        if user and not user["disabled"] and not recent and mailer.configured():
+        # user ko hamesha ek jawab - lekin server log mein asal nateeja (email nahi aayi to wajah yahin milti hai)
+        if not user:
+            app.logger.warning("password reset: no account for the email that was typed")
+        elif user["disabled"]:
+            app.logger.warning("password reset: user %s is disabled - no email", user["id"])
+        elif recent:
+            app.logger.warning("password reset: user %s asked again within 2 minutes - first email still on its way", user["id"])
+        elif not mailer.configured():
+            app.logger.warning("password reset: email is not set up (GMAIL_ADDRESS / GMAIL_APP_PASSWORD)")
+        else:
             _reset_sent[email] = time.time()
             url = url_for("reset_password", token=make_token("reset", user), _external=True)
             try:
                 mailer.send_reset(user["email"], user["name"], url)
+                app.logger.warning("password reset: email sent to user %s (link %s/reset/...)", user["id"], request.host_url.rstrip("/"))
             except mailer.MailError as e:
-                app.logger.warning("reset email to user %s failed: %s", user["id"], e)   # user ko nahi batate, log mein likho
+                app.logger.warning("password reset: email to user %s failed: %s", user["id"], e)
         return redirect(url_for("forgot"))
     return render_template("forgot.html")
 
