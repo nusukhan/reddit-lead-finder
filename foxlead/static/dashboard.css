@@ -206,13 +206,19 @@ tbody tr.done .lead-title { color: var(--soft); }
 .pbtn.primary:hover { filter: brightness(1.06); }
 
 @media (max-width: 900px) { .grid { grid-template-columns: 1fr 1fr; } .grid:not(.three) .card:first-child { grid-column: 1 / -1; } }
+/* side swipe par browser "Back" na chale - swipe sirf hamara menu khole/band kare */
+html, body { overscroll-behavior-x: none; }
+.menu-btn { display: none; }
+.rail-scrim[hidden] { display: none; }
+/* phone: upar koi patti nahi - menu baayein taraf ka drawer (☰ ya kinare se swipe) */
 @media (max-width: 720px) {
-  .frame { flex-direction: column; }
-  .rail { position: sticky; top: 0; z-index: 5; height: auto; width: auto; flex: none; flex-direction: row; align-items: center; gap: 8px; padding: 10px 12px; border-right: 0; border-bottom: 1px solid var(--line); overflow-x: auto; }
-  .rail .brand { padding: 0 4px 0 0; }
-  .rail .brand-name, .nav-label, .rail-card, .nav .sep { display: none; }
-  .nav { flex-direction: row; }
-  .nav button, .nav a { white-space: nowrap; padding: 8px 10px; }
+  .rail { position: fixed; top: 0; left: 0; bottom: 0; z-index: 30; width: 272px; max-width: 84vw; height: 100vh; height: 100dvh;
+          transform: translateX(-105%); transition: transform 0.25s ease; box-shadow: 24px 0 60px -24px rgba(0,0,0,0.8); }
+  .rail.open { transform: none; }
+  .rail-scrim { position: fixed; inset: 0; z-index: 29; background: rgba(5,8,13,0.6); }
+  .menu-btn { display: inline-flex; flex: none; width: 42px; height: 42px; align-items: center; justify-content: center;
+              border: 1px solid var(--line); background: var(--panel); color: var(--ink); border-radius: 10px; cursor: pointer; }
+  .menu-btn svg { width: 20px; height: 20px; }
   .topbar, .titlerow, .grid, .filters, .table-wrap, .foot-row, .pad { padding-left: 14px; padding-right: 14px; }
   .toast { margin-left: 14px; margin-right: 14px; }
 }

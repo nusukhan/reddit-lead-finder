@@ -503,6 +503,7 @@ UR = {
     "found {ago}": "ملی {ago}",
     "posted {ago}": "پوسٹ ہوئی {ago}",
     "Sort leads": "لیڈز کی ترتیب",
+    "Menu": "مینو",
     "Account created! We emailed a 6-digit code to {email} — enter it below.": "اکاؤنٹ بن گیا! ہم نے {email} پر 6 ہندسوں کا کوڈ بھیجا ہے — نیچے لکھیں۔",
     "That code has expired — send yourself a new one.": "یہ کوڈ ختم ہو چکا ہے — نیا کوڈ منگوائیں۔",
     "Too many wrong tries — send yourself a new code.": "بہت زیادہ غلط کوششیں — نیا کوڈ منگوائیں۔",

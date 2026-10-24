@@ -719,6 +719,41 @@ function renderAll() {
   }
 }
 $("nav").addEventListener("click", e => { const b = e.target.closest("button"); if (b) { state.screen = b.dataset.s; renderAll(); } });
+
+// ---------- phone: menu drawer (☰ button, ya kinare se swipe) ----------
+const rail = $("rail"), railScrim = $("rail-scrim"), menuBtn = $("menu-btn");
+const phone = matchMedia("(max-width: 720px)");
+function setMenu(open) {
+  rail.classList.toggle("open", open);
+  railScrim.hidden = !open;
+  menuBtn.setAttribute("aria-expanded", String(open));
+  document.body.style.overflow = open ? "hidden" : "";       // peeche ka page na scroll ho
+}
+menuBtn.addEventListener("click", () => setMenu(!rail.classList.contains("open")));
+railScrim.addEventListener("click", () => setMenu(false));
+$("nav").addEventListener("click", e => { if (phone.matches && e.target.closest("button, a")) setMenu(false); });
+document.addEventListener("keydown", e => { if (e.key === "Escape" && rail.classList.contains("open")) setMenu(false); });
+phone.addEventListener("change", () => setMenu(false));
+// swipe: kinare se andar ki taraf = khulo, wapas = band (Urdu mein ulta - drawer daayein taraf hai)
+let swipeX = null, swipeY = 0;
+const rtlDir = () => document.documentElement.dir === "rtl";
+document.addEventListener("touchstart", e => {
+  if (!phone.matches || !$("chat").hidden || $("panel").classList.contains("show")) { swipeX = null; return; }
+  const p = e.touches[0];
+  // baayein ek-tihaai se (bilkul kinara phone ka "Back" gesture le leta hai); side-scroll wali jagahon se nahi
+  const nearSide = rtlDir() ? p.clientX > innerWidth * 0.65 : p.clientX < innerWidth * 0.35;
+  const scroller = e.target.closest(".table-wrap, .board, .filters, .chat-suggest, input, select, textarea");
+  swipeX = rail.classList.contains("open") || (nearSide && !scroller) ? p.clientX : null;
+  swipeY = p.clientY;
+}, { passive: true });
+document.addEventListener("touchend", e => {
+  if (swipeX === null) return;
+  const p = e.changedTouches[0];
+  const dx = (p.clientX - swipeX) * (rtlDir() ? -1 : 1), dy = Math.abs(p.clientY - swipeY);
+  swipeX = null;
+  if (dy > Math.abs(dx)) return;                                // ye upar-neeche scroll tha
+  if (dx > 60) setMenu(true); else if (dx < -60) setMenu(false);
+}, { passive: true });
 $("filters").addEventListener("click", e => { const c = e.target.closest(".chip"); if (c) { state.chip = c.dataset.f; renderLeads(); } });
 $("q").addEventListener("input", e => { state.q = e.target.value; state.screen = "leads"; renderAll(); });
 $("range").addEventListener("change", e => { state.range = Number(e.target.value); renderAll(); });
