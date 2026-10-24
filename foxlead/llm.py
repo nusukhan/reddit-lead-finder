@@ -54,4 +54,6 @@ def ask(prompt, *, user_id, kind, effort="low", max_tokens=2000, system=None):
     text = "".join(b.text for b in resp.content if b.type == "text").strip()
     if not text:
         raise LLMError("Claude sent back an empty answer — please try again.")
+    if resp.stop_reason == "max_tokens":
+        text += "…"                             # had par kat gaya - adhoora jumla ajeeb na lage
     return text
