@@ -219,6 +219,15 @@ html, body { overscroll-behavior-x: none; }
   .menu-btn { display: inline-flex; flex: none; width: 42px; height: 42px; align-items: center; justify-content: center;
               border: 1px solid var(--line); background: var(--panel); color: var(--ink); border-radius: 10px; cursor: pointer; }
   .menu-btn svg { width: 20px; height: 20px; }
+  /* phone topbar: pehli line ☰ · search · profile (daayein) - doosri line date · zubaan · bell */
+  .topbar { gap: 10px; }
+  .topbar .menu-btn { order: 1; }
+  .topbar .search { order: 2; flex: 1 1 calc(100% - 120px); min-width: 0; }
+  .topbar .me { order: 3; }
+  .topbar .daterange { order: 4; }
+  .topbar .lang-switch { order: 5; }
+  .topbar #bell { order: 6; }
+  .me .menu { width: min(260px, calc(100vw - 28px)); }    /* profile menu poora screen ke andar */
   .topbar, .titlerow, .grid, .filters, .table-wrap, .foot-row, .pad { padding-left: 14px; padding-right: 14px; }
   .toast { margin-left: 14px; margin-right: 14px; }
 }
