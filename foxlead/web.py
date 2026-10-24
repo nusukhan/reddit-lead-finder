@@ -481,7 +481,7 @@ def forgot():
             flash(t("Please enter a valid email address."))
             return redirect(url_for("forgot"))
         session["reset_email"] = email
-        flash(t("If an account exists for {email}, we've emailed it a 6-digit code. It works for 15 minutes.", email=email), "success")
+        # agle page ki heading hi batati hai ke code bhej diya - alag hara message nahi (warna do baar wahi baat)
         recent = time.time() - _reset_sent.get(email, 0) < codes.RESEND_SECONDS
         with db.connect() as conn:
             user = conn.execute("SELECT * FROM users WHERE email = ?", (email,)).fetchone()
@@ -578,7 +578,7 @@ def reset_code_resend():
                 app.logger.warning("password reset: new code emailed to user %s", user["id"])
             except mailer.MailError as e:
                 app.logger.warning("password reset: email to user %s failed: %s", user["id"], e)
-        flash(t("If an account exists for {email}, we've emailed it a 6-digit code. It works for 15 minutes.", email=email), "success")
+        flash(t("A new code is on its way to {email} (if it has a Foxlead account).", email=email), "success")
     return redirect(url_for("reset_code"))
 
 

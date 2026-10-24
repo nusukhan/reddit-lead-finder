@@ -503,6 +503,7 @@ UR = {
     "found {ago}": "ملی {ago}",
     "posted {ago}": "پوسٹ ہوئی {ago}",
     "Sort leads": "لیڈز کی ترتیب",
+    "A new code is on its way to {email} (if it has a Foxlead account).": "نیا کوڈ {email} پر بھیجا جا رہا ہے (اگر اس کا Foxlead اکاؤنٹ ہے)۔",
     "Menu": "مینو",
     "Account created! We emailed a 6-digit code to {email} — enter it below.": "اکاؤنٹ بن گیا! ہم نے {email} پر 6 ہندسوں کا کوڈ بھیجا ہے — نیچے لکھیں۔",
     "That code has expired — send yourself a new one.": "یہ کوڈ ختم ہو چکا ہے — نیا کوڈ منگوائیں۔",
