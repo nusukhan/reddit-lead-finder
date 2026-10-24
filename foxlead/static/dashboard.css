@@ -224,6 +224,16 @@ html, body { overscroll-behavior-x: none; }
 }
 @media (max-width: 560px) {
   .grid, .grid.three { grid-template-columns: 1fr; }
+  /* phone: table ki jagah cards - columns katte nahi (pehle 740px ki table side mein kat jaati thi) */
+  .table-wrap table { min-width: 0; }
+  .table-wrap thead { display: none; }
+  .table-wrap tbody tr { display: block; background: var(--panel); border: 1px solid var(--line); border-radius: 12px; padding: 8px 12px; margin-bottom: 10px; }
+  .table-wrap tbody td { display: flex; justify-content: space-between; align-items: center; gap: 12px; padding: 6px 0; border: 0; text-align: right; }
+  .table-wrap tbody td::before { content: attr(data-label); flex: none; font-size: 0.64rem; text-transform: uppercase; letter-spacing: 0.06em; color: var(--faint); text-align: left; }
+  .table-wrap tbody td:first-child { display: block; text-align: left; padding-bottom: 8px; border-bottom: 1px solid var(--line-2); }
+  .table-wrap tbody td:first-child::before, .table-wrap tbody td[colspan]::before { display: none; }
+  .table-wrap tbody td[colspan] { display: block; border: 0; padding: 0; text-align: center; }
+  .table-wrap tbody tr:has(td[colspan]) { background: none; border: 0; padding: 0; }
 }
 
 /* ---------- chatbot: Ask Foxlead ---------- */

@@ -465,7 +465,9 @@ function renderWon() {
   $("won-body").replaceChildren(...(won.length ? won.map(l => clickRow(l, [leadCell(l, subLine(l)), el("span", { class: "mono" }, marked(l)), srcBadge(l),
       el("span", { style: "display:inline-flex;gap:8px;align-items:center" }, el("span", { class: "pill apply" }, t("Client")),
         l.deal_value ? el("span", { class: "mono", style: "color:var(--apply)" }, money(l.deal_value)) : null)]))
-    : [emptyRow(4, t("No wins yet"), t("When a lead turns into a client, open it and mark it Won."))]));
+    : [emptyRow(4, t("No wins yet"), t("When a lead becomes a paying client: open the lead, set its status to Won and add the deal value. Your earnings show up here."),
+        el("p", { style: "margin-top:12px" }, Object.assign(el("button", { type: "button", class: "sbtn primary" }, t("Open my leads")),
+          { onclick: () => { state.screen = "leads"; renderAll(); } })))]));
 }
 
 // ---------- pipeline board ----------
@@ -772,6 +774,13 @@ document.addEventListener("keydown", e => { if (e.key === "Escape") { closeLead(
 let resizeTimer;
 window.addEventListener("resize", () => { clearTimeout(resizeTimer); resizeTimer = setTimeout(renderAll, 120); });
 renderAll();
+// phone par table ki har row card banti hai: har khaane ke saath uska naam (thead se) - CSS data-label dikhata hai
+function labelCells(tbody) {
+  const heads = [...tbody.closest("table").querySelectorAll("thead th")].map(th => th.textContent.trim());
+  tbody.querySelectorAll(":scope > tr > td").forEach(td => { td.dataset.label = heads[td.cellIndex] || ""; });
+}
+document.querySelectorAll(".table-wrap tbody").forEach(tb => { labelCells(tb); new MutationObserver(() => labelCells(tb)).observe(tb, { childList: true }); });
+
 // chatbot ne "Put in draft" kiya ya profile badli - dashboard bhi taaza karo
 window.addEventListener("foxlead:draft", e => {
   const l = leads.find(x => x.id === e.detail.id);

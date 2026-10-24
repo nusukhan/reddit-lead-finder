@@ -503,6 +503,8 @@ UR = {
     "found {ago}": "ملی {ago}",
     "posted {ago}": "پوسٹ ہوئی {ago}",
     "Sort leads": "لیڈز کی ترتیب",
+    "When a lead becomes a paying client: open the lead, set its status to Won and add the deal value. Your earnings show up here.": "جب کوئی لیڈ پیسے دینے والا کلائنٹ بن جائے: لیڈ کھولیں، اسٹیٹس جیت (Won) کریں اور ڈیل کی رقم لکھیں۔ آپ کی کمائی یہاں نظر آئے گی۔",
+    "Open my leads": "میری لیڈز کھولیں",
     "Show all job boards ({n} more)": "تمام جاب بورڈز دکھائیں ({n} مزید)",
     "A new code is on its way to {email} (if it has a Foxlead account).": "نیا کوڈ {email} پر بھیجا جا رہا ہے (اگر اس کا Foxlead اکاؤنٹ ہے)۔",
     "Menu": "مینو",

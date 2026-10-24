@@ -252,6 +252,8 @@
         : t("{n} new leads from the latest scan — want the best one first?", { n });
       if (greet.hidden) play(SOUND.greet);       // browser pehli click se pehle awaaz rok sakta hai - tab chup
       greet.hidden = false;
+      clearTimeout(greet.timer);                 // 8 sec baad khud chhup jaye (phone par leads ko na dhake) - button ka number rehta hai
+      greet.timer = setTimeout(() => { greet.hidden = true; }, 8000);
     } else if (!n) greet.hidden = true;
     if (first) { helloLeads = n; maybeHello(); }     // dashboard khulte hi robot ki awaaz
   };
@@ -288,7 +290,8 @@
   function maybeHello() {
     if (!soundOn || helloDone) return;
     const allowed = navigator.userActivation ? navigator.userActivation.hasBeenActive : false;
-    if (allowed) robotHello(); else hint.hidden = false;
+    if (allowed) robotHello();
+    else { hint.hidden = false; setTimeout(() => { hint.hidden = true; }, 8000); }   // pehli click par robot phir bhi bolega
   }
   hint.addEventListener("click", robotHello);
   $c("chat-greet-go").addEventListener("click", () => { hideGreet(); setLead(null); open(true); ask(t("Which of my new leads should I look at first?")); });

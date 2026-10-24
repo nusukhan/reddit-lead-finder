@@ -2,5 +2,14 @@
 {# ek jaisa message do baar na aaye (jaise button do baar dabaya) #}
 {% for cat, msg in get_flashed_messages(with_categories=true)|unique %}
 {% set kind = 'ok' if cat in ('success', 'ok') else ('info' if cat == 'info' else 'err') %}
-<div class="flash {{ kind }}" role="{{ 'alert' if kind == 'err' else 'status' }}">{{ msg }}</div>
+<div class="flash {{ kind }}" role="{{ 'alert' if kind == 'err' else 'status' }}"><span>{{ msg }}</span><button type="button" class="flash-x" aria-label="{{ _('Dismiss') }}">×</button></div>
 {% endfor %}
+<script>
+/* hara (kamyabi) aur neela (maloomat) message 5 second baad khud gayab; laal (ghalti) tab tak rahe jab tak theek na ho */
+document.querySelectorAll(".flash:not([data-wired])").forEach(f => {
+  f.dataset.wired = "1";
+  const bye = () => { f.classList.add("bye"); setTimeout(() => f.remove(), 300); };
+  f.querySelector(".flash-x").addEventListener("click", bye);
+  if (!f.classList.contains("err")) setTimeout(bye, 5000);
+});
+</script>
