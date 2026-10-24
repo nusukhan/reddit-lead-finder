@@ -214,6 +214,26 @@ def fetch_remoteok():
     return posts, []
 
 
+# ---------------- Jobicy (category wali remote jobs) ----------------
+
+def fetch_jobicy(key):
+    """Jobicy ki free API - ek category (data-science, engineering...). Shart: Jobicy ka naam + asli job link."""
+    data = get(f"https://jobicy.com/api/v2/remote-jobs?count=50&industry={FEEDS[key]['industry']}", as_json=True)
+    if not isinstance(data, dict) or not isinstance(data.get("jobs"), list):
+        return [], [FEEDS[key]["label"]]
+    posts = []
+    for j in data["jobs"]:
+        when = parse_iso(str(j.get("pubDate") or "").replace(" ", "T"))
+        if too_old(when) or not j.get("url"):
+            continue
+        extra = " · ".join(str(x) for x in [j.get("jobGeo"), j.get("jobLevel"), ", ".join(j.get("jobType") or []) if isinstance(j.get("jobType"), list) else j.get("jobType")] if x)
+        posts.append({"link": j["url"], "source": key,
+                      "title": f"{(j.get('companyName') or '').strip()}: {(j.get('jobTitle') or '').strip()}".strip(": "),
+                      "text": (clean(j.get("jobDescription") or j.get("jobExcerpt")) + (f" [{extra}]" if extra else ""))[:3000],
+                      "is_job": 1, "posted_at": iso(when)})
+    return posts, []
+
+
 def fetch_feed(key):
     kind = FEEDS[key]["type"]
     if kind == "rss":
@@ -222,4 +242,6 @@ def fetch_feed(key):
         return fetch_hn()
     if kind == "remoteok":
         return fetch_remoteok()
+    if kind == "jobicy":
+        return fetch_jobicy(key)
     return [], []

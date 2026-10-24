@@ -93,9 +93,10 @@
         <label>{{ _("Job boards") }}</label>
         <div class="checks">
           {% for key, f in feeds.items() %}
-          <label class="check"><input type="checkbox" name="feeds" value="{{ key }}" {% if profile and key in profile.feeds %}checked{% endif %}>{{ f.label }}</label>
+          <label class="check" data-fields="{{ f.fields|join(' ') }}"><input type="checkbox" name="feeds" value="{{ key }}" {% if profile and key in profile.feeds %}checked{% endif %}>{{ f.label }}</label>
           {% endfor %}
         </div>
+        <button type="button" class="linkbtn feeds-more" id="feeds-more" data-more="{{ _('Show all job boards ({n} more)') }}" hidden></button>
       </div>
     </div>
 

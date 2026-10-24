@@ -14,6 +14,7 @@ form.querySelectorAll('input[name="profession"]').forEach(radio => {
     field("subreddits").value = p.subreddits.join(", ");
     field("keywords").value = p.keywords.join(", ");
     form.querySelectorAll('input[name="feeds"]').forEach(cb => { cb.checked = p.feeds.includes(cb.value); });
+    showFeeds(p.id);
     field(p.id === "custom" ? "title" : "skills").focus();
   });
 });
@@ -31,3 +32,21 @@ try {
     line.textContent = line.textContent.replace(/[^:：]*$/, " " + tz);
   }
 } catch (e) { /* purana browser - server wala time zone hi rahe */ }
+
+// job boards: sirf chuni hui field ke kaam ke dikhao (jo pehle se ticked hain wo bhi); baaki "Show all" ke peeche
+const checks = form.querySelector(".checks"), moreBtn = document.getElementById("feeds-more");
+function showFeeds(fieldId) {
+  let hidden = 0;
+  checks.querySelectorAll(".check").forEach(label => {
+    const fits = !fieldId || fieldId === "custom" || label.dataset.fields.split(" ").includes(fieldId);
+    const off = !fits && !label.querySelector("input").checked;
+    label.classList.toggle("off-field", off);
+    if (off) hidden++;
+  });
+  checks.classList.remove("show-all");
+  moreBtn.hidden = !hidden;
+  moreBtn.textContent = (moreBtn.dataset.more || "Show all job boards ({n} more)").replace("{n}", hidden);
+}
+moreBtn.addEventListener("click", () => { checks.classList.add("show-all"); moreBtn.hidden = true; });
+const picked = form.querySelector('input[name="profession"]:checked');
+showFeeds(picked ? picked.value : "custom");

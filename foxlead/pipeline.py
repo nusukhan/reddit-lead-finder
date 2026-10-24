@@ -69,7 +69,7 @@ def fetch_and_store(subreddits, feed_keys, searches=()):
         last = {k: db.get_meta(conn, "fetched:" + k) for k in feed_keys}
     todo = []
     for key in feed_keys:
-        slow = FEEDS[key]["type"] in ("hn", "remoteok")
+        slow = FEEDS[key]["type"] in ("hn", "remoteok", "jobicy")       # inki API se kam maango (3 ghante mein ek)
         if slow and last[key] and last[key] > ago_iso(hours=SLOW_SOURCES_HOURS):
             log(f"  {FEEDS[key]['label']}: fetched recently, skipping")
         else:

@@ -7,16 +7,39 @@
 #   type hn       = Hacker News ka mahana "Who is hiring?" thread
 #   type remoteok = Remote OK ki public API (shart: "Remote OK" naam + unke job page ka link dikhana)
 # NOTE: Remotive jaan-boojh kar NAHI hai - unki terms signup ke peeche jobs dikhane se mana karti hain.
+# fields: kin fields ke liye ye board kaam ka hai (profile form mein sirf wahi dikhte hain; "custom" ko sab)
 FEEDS = {
-    "larajobs":        {"label": "LaraJobs",                     "type": "rss", "url": "https://larajobs.com/feed"},
-    "wwr_fullstack":   {"label": "We Work Remotely · Full-Stack", "type": "rss", "url": "https://weworkremotely.com/categories/remote-full-stack-programming-jobs.rss"},
-    "wwr_backend":     {"label": "We Work Remotely · Back-End",   "type": "rss", "url": "https://weworkremotely.com/categories/remote-back-end-programming-jobs.rss"},
-    "wwr_frontend":    {"label": "We Work Remotely · Front-End",  "type": "rss", "url": "https://weworkremotely.com/categories/remote-front-end-programming-jobs.rss"},
-    "wwr_programming": {"label": "We Work Remotely · Programming", "type": "rss", "url": "https://weworkremotely.com/categories/remote-programming-jobs.rss"},
-    "wwr_devops":      {"label": "We Work Remotely · DevOps",     "type": "rss", "url": "https://weworkremotely.com/categories/remote-devops-sysadmin-jobs.rss"},
-    "wwr_design":      {"label": "We Work Remotely · Design",     "type": "rss", "url": "https://weworkremotely.com/categories/remote-design-jobs.rss"},
-    "hn_hiring":       {"label": "Hacker News · Who's hiring",   "type": "hn"},
-    "remoteok":        {"label": "Remote OK",                    "type": "remoteok"},
+    "larajobs":        {"label": "LaraJobs",                     "type": "rss", "url": "https://larajobs.com/feed",
+                        "fields": ["laravel"]},
+    "wwr_fullstack":   {"label": "We Work Remotely · Full-Stack", "type": "rss", "url": "https://weworkremotely.com/categories/remote-full-stack-programming-jobs.rss",
+                        "fields": ["laravel", "javascript", "python", "wordpress"]},
+    "wwr_backend":     {"label": "We Work Remotely · Back-End",   "type": "rss", "url": "https://weworkremotely.com/categories/remote-back-end-programming-jobs.rss",
+                        "fields": ["laravel", "javascript", "python"]},
+    "wwr_frontend":    {"label": "We Work Remotely · Front-End",  "type": "rss", "url": "https://weworkremotely.com/categories/remote-front-end-programming-jobs.rss",
+                        "fields": ["javascript", "design"]},
+    "wwr_programming": {"label": "We Work Remotely · Programming", "type": "rss", "url": "https://weworkremotely.com/categories/remote-programming-jobs.rss",
+                        "fields": ["javascript", "python", "mobile", "qa"]},
+    "wwr_devops":      {"label": "We Work Remotely · DevOps",     "type": "rss", "url": "https://weworkremotely.com/categories/remote-devops-sysadmin-jobs.rss",
+                        "fields": ["devops"]},
+    "wwr_design":      {"label": "We Work Remotely · Design",     "type": "rss", "url": "https://weworkremotely.com/categories/remote-design-jobs.rss",
+                        "fields": ["design"]},
+    "python_jobs":     {"label": "Python.org Jobs",              "type": "rss", "url": "https://www.python.org/jobs/feed/rss/",
+                        "fields": ["python", "data_ai", "ml"]},
+    "wp_jobs":         {"label": "WordPress Jobs",               "type": "rss", "url": "https://jobs.wordpress.net/feed/",
+                        "fields": ["wordpress"]},
+    # Jobicy ki free API (shart: "Jobicy" naam + job ka asli link - dono dikhate hain). Category se saaf jobs.
+    "jobicy_data":     {"label": "Jobicy · Data & AI",            "type": "jobicy", "industry": "data-science",
+                        "fields": ["data_ai", "ml"]},
+    "jobicy_eng":      {"label": "Jobicy · Engineering",          "type": "jobicy", "industry": "engineering",
+                        "fields": ["laravel", "javascript", "python", "mobile", "devops", "data_ai", "ml"]},
+    "jobicy_design":   {"label": "Jobicy · Design",               "type": "jobicy", "industry": "design-multimedia",
+                        "fields": ["design"]},
+    "jobicy_qa":       {"label": "Jobicy · QA & Testing",         "type": "jobicy", "industry": "qa-testing",
+                        "fields": ["qa"]},
+    "hn_hiring":       {"label": "Hacker News · Who's hiring",   "type": "hn",
+                        "fields": ["laravel", "javascript", "python", "mobile", "design", "devops", "data_ai", "ml", "qa"]},
+    "remoteok":        {"label": "Remote OK",                    "type": "remoteok",
+                        "fields": ["laravel", "javascript", "python", "wordpress", "mobile", "design", "devops", "data_ai", "ml", "qa"]},
 }
 
 PROFESSIONS = [
@@ -28,7 +51,7 @@ PROFESSIONS = [
         "ideal_client": "Founders and companies with a live Laravel/PHP app that is broken, slow or lost its developer; companies hiring Laravel/PHP/Vue developers",
         "subreddits": ["forhire", "laravel", "PHP", "webdev", "SaaS"],
         "keywords": ["laravel", "php", "vue", "livewire", "inertia"],
-        "feeds": ["larajobs", "wwr_fullstack", "wwr_backend", "remoteok", "hn_hiring"],
+        "feeds": ["larajobs", "wwr_fullstack", "wwr_backend", "jobicy_eng", "remoteok", "hn_hiring"],
     },
     {
         "id": "javascript", "short": "JS", "color": "#d9a94e",
@@ -38,7 +61,7 @@ PROFESSIONS = [
         "ideal_client": "Startups and businesses that need a React/Next.js front-end or a Node.js back-end built or fixed",
         "subreddits": ["forhire", "reactjs", "nextjs", "node", "webdev", "SaaS"],
         "keywords": ["react", "next.js", "nextjs", "node", "typescript", "javascript", "frontend"],
-        "feeds": ["wwr_fullstack", "wwr_frontend", "wwr_programming", "remoteok", "hn_hiring"],
+        "feeds": ["wwr_fullstack", "wwr_frontend", "jobicy_eng", "remoteok", "hn_hiring"],
     },
     {
         "id": "python", "short": "PY", "color": "#3d82f6",
@@ -48,7 +71,7 @@ PROFESSIONS = [
         "ideal_client": "Businesses that need a Python back-end, API, scraper or automation built or fixed",
         "subreddits": ["forhire", "django", "flask", "webdev", "SaaS"],
         "keywords": ["python", "django", "fastapi", "flask", "scraper", "scraping", "automation"],
-        "feeds": ["wwr_backend", "wwr_fullstack", "wwr_programming", "remoteok", "hn_hiring"],
+        "feeds": ["python_jobs", "wwr_backend", "wwr_fullstack", "jobicy_eng", "remoteok", "hn_hiring"],
     },
     {
         "id": "wordpress", "short": "WP", "color": "#38b2a8",
@@ -58,7 +81,7 @@ PROFESSIONS = [
         "ideal_client": "Small businesses and store owners who need a website or store built, fixed, sped up or customised",
         "subreddits": ["forhire", "Wordpress", "shopify", "smallbusiness", "ecommerce"],
         "keywords": ["wordpress", "woocommerce", "shopify", "elementor", "plugin", "theme", "website", "store"],
-        "feeds": ["wwr_programming", "wwr_fullstack", "remoteok"],
+        "feeds": ["wp_jobs", "wwr_fullstack", "remoteok"],
     },
     {
         "id": "mobile", "short": "MB", "color": "#9a7cf0",
@@ -68,7 +91,7 @@ PROFESSIONS = [
         "ideal_client": "Founders and businesses who need a mobile app built, finished or fixed",
         "subreddits": ["forhire", "startups", "FlutterDev", "reactnative", "androiddev", "iOSProgramming"],
         "keywords": ["flutter", "react native", "ios", "android", "mobile app", "app developer", "swift", "kotlin"],
-        "feeds": ["wwr_programming", "wwr_fullstack", "remoteok", "hn_hiring"],
+        "feeds": ["jobicy_eng", "wwr_programming", "remoteok", "hn_hiring"],
     },
     {
         "id": "design", "short": "UX", "color": "#e87ba4",
@@ -78,7 +101,7 @@ PROFESSIONS = [
         "ideal_client": "Startups and companies that need a product, app or website designed or redesigned",
         "subreddits": ["forhire", "startups", "UI_Design", "userexperience", "web_design"],
         "keywords": ["designer", "ui", "ux", "figma", "redesign", "landing page", "mockup", "prototype"],
-        "feeds": ["wwr_design", "remoteok"],
+        "feeds": ["wwr_design", "jobicy_design", "remoteok"],
     },
     {
         "id": "devops", "short": "DO", "color": "#35c08a",
@@ -88,7 +111,7 @@ PROFESSIONS = [
         "ideal_client": "Companies with deployment, scaling, server or cloud-cost problems",
         "subreddits": ["forhire", "devops", "aws", "sysadmin", "selfhosted"],
         "keywords": ["devops", "aws", "docker", "kubernetes", "terraform", "ci/cd", "deploy", "server", "cloud"],
-        "feeds": ["wwr_devops", "remoteok", "hn_hiring"],
+        "feeds": ["wwr_devops", "jobicy_eng", "remoteok", "hn_hiring"],
     },
     {
         "id": "data_ai", "short": "AI", "color": "#4aa3f2",
@@ -98,7 +121,7 @@ PROFESSIONS = [
         "ideal_client": "Businesses that want AI features, chatbots, automations or data dashboards built",
         "subreddits": ["forhire", "datascience", "MachineLearning", "LocalLLaMA", "SaaS"],
         "keywords": ["ai", "llm", "chatbot", "rag", "data engineer", "data pipeline", "etl", "ai engineer", "automation"],
-        "feeds": ["wwr_fullstack", "wwr_backend", "wwr_programming", "remoteok", "hn_hiring"],
+        "feeds": ["jobicy_data", "python_jobs", "jobicy_eng", "remoteok", "hn_hiring"],
     },
     {
         "id": "ml", "short": "ML", "color": "#7b8cf0",
@@ -109,7 +132,7 @@ PROFESSIONS = [
         "subreddits": ["forhire", "MachineLearning", "MLjobs", "datascience", "computervision"],
         "keywords": ["machine learning", "ml", "ml engineer", "ai engineer", "mlops", "deep learning", "pytorch",
                      "tensorflow", "computer vision", "nlp", "llm", "fine-tuning", "model training"],
-        "feeds": ["wwr_fullstack", "wwr_backend", "wwr_programming", "remoteok", "hn_hiring"],
+        "feeds": ["jobicy_data", "python_jobs", "jobicy_eng", "remoteok", "hn_hiring"],
     },
     {
         "id": "qa", "short": "QA", "color": "#e07a74",
@@ -119,7 +142,7 @@ PROFESSIONS = [
         "ideal_client": "Teams that need testing before a launch, or test automation set up",
         "subreddits": ["forhire", "QualityAssurance", "softwaretesting", "SaaS"],
         "keywords": ["qa", "testing", "tester", "test automation", "playwright", "cypress", "selenium", "bug"],
-        "feeds": ["wwr_fullstack", "wwr_programming", "remoteok"],
+        "feeds": ["jobicy_qa", "wwr_programming", "remoteok"],
     },
     {
         "id": "custom", "short": "+", "color": "#5a6472",
