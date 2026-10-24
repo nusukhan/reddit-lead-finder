@@ -762,7 +762,8 @@ $("range").addEventListener("change", e => { state.range = Number(e.target.value
 $("sort").addEventListener("change", e => { state.sort = e.target.value; renderLeads(); });
 $("bell").addEventListener("click", () => { state.screen = "leads"; state.chip = leads.some(isDue) ? "due" : "todo"; renderAll(); });
 $("scan").addEventListener("click", async () => {
-  try { await api("/api/scan", {}); scanning = true; renderAll(); toast(t("Scan started — this takes a few minutes."), null, null, "ok"); setTimeout(() => load().catch(e => toast(e.message, null, null, "err")), 8000); }
+  try { const r = await api("/api/scan", {}); scanning = true; renderAll();
+    toast(r.left == null ? t("Scan started — this takes a few minutes.") : t("Scan started — {left} scans left today.", { left: r.left }), null, null, "ok"); setTimeout(() => load().catch(e => toast(e.message, null, null, "err")), 8000); }
   catch (e) { toast(e.message, null, null, "err"); }
 });
 const meBtn = $("me-btn"), meMenu = $("me-menu");

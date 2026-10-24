@@ -54,9 +54,10 @@ ADMIN_EMAILS = {e.strip().lower() for e in os.getenv("ADMIN_EMAILS", "").split("
 
 # Plans - har plan ki hadein (qeemat Stripe mein set hoti hai, yahan sirf dikhane ke liye)
 PLANS = {
-    "free": {"name": "Free", "price": 0, "scan_every_hours": 24, "drafts_per_day": 10, "chat_per_day": 10,
+    # scans_per_day: din mein kul kitne scan (Scan now + profile badalne wale + auto). None = koi hadd nahi
+    "free": {"name": "Free", "price": 0, "scan_every_hours": 24, "scans_per_day": 10, "drafts_per_day": 10, "chat_per_day": 10,
              "telegram": False, "weekly_report": False, "team": False},
-    "pro":  {"name": "Pro", "price": 9, "scan_every_hours": 1, "drafts_per_day": 30, "chat_per_day": 50,
+    "pro":  {"name": "Pro", "price": 9, "scan_every_hours": 1, "scans_per_day": None, "drafts_per_day": 30, "chat_per_day": 50,
              "telegram": True, "weekly_report": True, "team": True},
 }
 
@@ -78,8 +79,6 @@ SCHEDULER = os.getenv("FOXLEAD_SCHEDULER", "1") == "1"
 
 # internet par link ke peeche (Cloudflare Tunnel / hosting): asli https aur visitor ka IP headers se lo
 BEHIND_PROXY = os.getenv("FOXLEAD_BEHIND_PROXY", "0") == "1"
-# Free user profile baar baar save kare to bhi din mein itne se zyada scan nahi (Claude ka kharcha)
-FREE_SCANS_PER_DAY = 5
 
 # profile/field badalne par foran scan (tests mein FOXLEAD_AUTO_SCAN=0 - asli internet/Claude na chale)
 AUTO_SCAN_ON_PROFILE = os.getenv("FOXLEAD_AUTO_SCAN", "1") == "1"

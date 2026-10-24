@@ -143,7 +143,7 @@
         </div>
       </div>
       <p class="hint" style="margin-top:-6px">{{ _("Foxlead scans by itself on this schedule — you don't need to keep anything open.") }}
-        {% if scan_floor > 1 %}{{ _("The Free plan scans once a day; Pro can scan every hour.") }}{% endif %}
+        {% if scan_floor > 1 %}{{ _("Free plan: auto-scan once a day, plus Scan now up to 10 times a day. Pro can auto-scan every hour.") }}{% endif %}
         <span id="tz-line">{{ _("Your time zone: {tz}", tz=user.timezone or "UTC") }}</span></p>
       <input type="hidden" name="timezone" id="timezone" value="{{ user.timezone }}">
       <div class="field">

@@ -40,7 +40,7 @@
       <h2>Free {% if plan == 'free' %}<span class="badge-cur">{{ _("Current") }}</span>{% endif %}</h2>
       <div class="price">$0 <small>{{ _("/ month") }}</small></div>
       <ul>
-        <li>{{ _("Scans once a day") }}</li>
+        <li>{{ _("Up to {n} scans a day (Scan now + daily auto-scan)", n=free.scans_per_day) }}</li>
         <li>{{ _("{n} AI reply drafts a day", n=free.drafts_per_day) }}</li>
         <li>{{ _("{n} chatbot messages a day", n=free.chat_per_day) }}</li>
         <li>{{ _("Email alerts, pipeline board, notes & reminders") }}</li>

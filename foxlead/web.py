@@ -919,29 +919,31 @@ def api_scan(user):
     uid = workspace_id(user)                 # team member owner ki profile scan karta hai
     if uid in _scanning:
         return jsonify(ok=True, running=True)
-    if plans.plan_of(user) == "free":        # Free: din mein ek scan (robot wala bhi gina jata hai)
-        with db.connect() as conn:
-            last = conn.execute("SELECT MAX(time) FROM runs WHERE user_id = ?", (uid,)).fetchone()[0]
-        if last and last > iso_ago(days=1):
-            return jsonify(error=t("The Free plan scans once a day — upgrade to Pro for hourly scans and Scan now.")), 429
+    limit = plans.limits(user)["scans_per_day"]
+    used = scans_today(uid)
+    if limit is not None and used >= limit:     # Free: din mein 10 (auto + Scan now + profile wale sab gine jaate hain)
+        return jsonify(error=t("You've used today's {n} scans on the Free plan — more tomorrow, or upgrade to Pro for unlimited scans.", n=limit)), 429
     wait = SCAN_COOLDOWN - (time.time() - _last_scan.get(uid, 0))
     if wait > 0:
         return jsonify(error=t("Please wait {n} min before scanning again.", n=int(wait // 60) + 1)), 429
     start_scan(uid)
-    return jsonify(ok=True, running=True)
+    return jsonify(ok=True, running=True, left=None if limit is None else limit - used - 1)
 
 
 _rescan = set()               # scan ke dauran profile badli - khatam hote hi nayi profile se dobara
 _scan_lock = threading.Lock()
 
 
-def scans_left_today(user):
-    """Free plan: profile badal badal kar din mein FREE_SCANS_PER_DAY se zyada scan nahi. Pro: koi hadd nahi."""
-    if plans.plan_of(user) != "free":
-        return True
+def scans_today(uid):
+    """Pichhle 24 ghante mein kitne scan hue (har tarah ke)."""
     with db.connect() as conn:
-        n = conn.execute("SELECT COUNT(*) FROM runs WHERE user_id = ? AND time >= ?", (user["id"], iso_ago(1))).fetchone()[0]
-    return n < config.FREE_SCANS_PER_DAY
+        return conn.execute("SELECT COUNT(*) FROM runs WHERE user_id = ? AND time >= ?", (uid, iso_ago(1))).fetchone()[0]
+
+
+def scans_left_today(user):
+    """Plan ki roz ki hadd (Free: 10) ke andar? Pro: koi hadd nahi."""
+    limit = plans.limits(user)["scans_per_day"]
+    return limit is None or scans_today(user["id"]) < limit
 
 
 def start_scan(uid, queue=False):
