@@ -87,6 +87,14 @@
       "scored": 0,
       "leads": 0,
       "status": "classify_failed"
+    },
+    {
+      "time": "2026-10-25T11:10:11Z",
+      "fetched": 187,
+      "new": 80,
+      "scored": 0,
+      "leads": 0,
+      "status": "classify_failed"
     }
   ],
   "leads": []
