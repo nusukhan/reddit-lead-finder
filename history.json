@@ -983,6 +983,14 @@
       "scored": 0,
       "leads": 0,
       "status": "classify_failed"
+    },
+    {
+      "time": "2026-11-25T02:59:02Z",
+      "fetched": 207,
+      "new": 80,
+      "scored": 0,
+      "leads": 0,
+      "status": "classify_failed"
     }
   ],
   "leads": []
